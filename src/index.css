@@ -1,0 +1,50 @@
+@import url('https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700&family=Source+Sans+3:wght@300;400;500;600;700&display=swap');
+
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Source Sans 3", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-heading: "Lexend", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --color-primary: oklch(0.2077 0.0398 265.75);
+  --color-on-primary: oklch(1.0 0 0);
+  --color-secondary: oklch(0.3717 0.0392 257.29);
+  --color-accent: oklch(0.52 0.17 255);
+  --color-background: oklch(0.9842 0.0034 247.86);
+  --color-foreground: oklch(0.1288 0.0406 264.7);
+  --color-muted: oklch(0.9415 0.008 253.85);
+  --color-border: oklch(0.9288 0.0126 255.51);
+  --color-destructive: oklch(0.5771 0.2152 27.33);
+  --color-ring: oklch(0.52 0.17 255);
+}
+
+/* Smooth scroll */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Microphone pulse animation */
+@keyframes pulse-recording {
+  0%, 100% {
+    box-shadow: 0 0 0 0 oklch(0.6378 0.2378 25.33 / 0.6);
+  }
+  50% {
+    box-shadow: 0 0 0 20px oklch(0.6378 0.2378 25.33 / 0);
+  }
+}
+
+.animate-pulse-recording {
+  animation: pulse-recording 1.5s ease-in-out infinite;
+}
+
+/* Scale effect for buttons */
+.btn-active {
+  @apply transition-all duration-150 ease-out;
+}
+.btn-active:active {
+  transform: scale(0.97);
+}
+
+/* Focus ring */
+*:focus-visible {
+  @apply outline-2 outline-offset-2 outline-ring;
+}
