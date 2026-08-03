@@ -66,14 +66,65 @@ export default function Dashboard() {
   const [heroRole, setHeroRole] = useState("");
   const [bottomRole, setBottomRole] = useState("");
 
+  /* ── Loading overlay state ── */
+  const [isLoading, setIsLoading] = useState(false);
+
   /* ── FAQ accordion state ── */
   const [openFaq, setOpenFaq] = useState<number | null>(null);
 
-  const handleStart = () => navigate("/interview");
-  const handleBottomStart = () => navigate("/interview");
+  const handleStart = () => {
+    if (isLoading) return;
+    setIsLoading(true);
+    setTimeout(() => {
+      setIsLoading(false);
+      navigate("/interview", { state: { role: heroRole || bottomRole } });
+    }, 2000);
+  };
+
+  const handleBottomStart = () => {
+    if (isLoading) return;
+    setIsLoading(true);
+    setTimeout(() => {
+      setIsLoading(false);
+      navigate("/interview", { state: { role: heroRole || bottomRole } });
+    }, 2000);
+  };
 
   return (
     <div className="min-h-[calc(100vh-3.5rem)] bg-background">
+      {/* ================================================================ */}
+      {/* LOADING OVERLAY                                                 */}
+      {/* ================================================================ */}
+      {isLoading && (
+        <div className="fixed inset-0 z-50 bg-white/80 backdrop-blur-sm flex flex-col items-center justify-center">
+          <svg
+            className="w-12 h-12 text-accent animate-spin"
+            fill="none"
+            viewBox="0 0 24 24"
+          >
+            <circle
+              className="opacity-25"
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              strokeWidth="4"
+            />
+            <path
+              className="opacity-75"
+              fill="currentColor"
+              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+            />
+          </svg>
+          <p className="font-heading text-lg font-semibold text-foreground mt-6">
+            Agent is fetching live market data and preparing questions…
+          </p>
+          <p className="text-sm text-muted-foreground mt-2">
+            This will only take a moment.
+          </p>
+        </div>
+      )}
+
       {/* ================================================================ */}
       {/* HERO SECTION                                                    */}
       {/* ================================================================ */}
@@ -87,7 +138,7 @@ export default function Dashboard() {
             interviews, and get AI-powered feedback — all in one place.
           </p>
 
-          <div className="mt-8 sm:mt-10 max-w-lg mx-auto">
+          <div className={`mt-8 sm:mt-10 max-w-lg mx-auto transition-all duration-200 ${isLoading ? "pointer-events-none opacity-50" : ""}`}>
             <RoleCombobox
               value={heroRole}
               onChange={setHeroRole}
@@ -495,7 +546,7 @@ export default function Dashboard() {
             insights, and AI coaching.
           </p>
 
-          <div className="mt-8 max-w-lg mx-auto">
+          <div className={`mt-8 max-w-lg mx-auto transition-all duration-200 ${isLoading ? "pointer-events-none opacity-50" : ""}`}>
             <RoleCombobox
               value={bottomRole}
               onChange={setBottomRole}

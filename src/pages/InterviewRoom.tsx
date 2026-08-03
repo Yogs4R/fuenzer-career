@@ -11,15 +11,26 @@ const starHints = [
   { label: "Result", text: "Share the measurable outcome — faster load times, happier users, etc." },
 ];
 
+type MicState = "idle" | "recording" | "processing";
+
 export default function InterviewRoom() {
-  const [isRecording, setIsRecording] = useState(false);
+  const [micState, setMicState] = useState<MicState>("idle");
+  const [hasRecording, setHasRecording] = useState(false);
   const [showHint, setShowHint] = useState(false);
   const navigate = useNavigate();
   const hintRef = useRef<HTMLDivElement>(null);
   const hintTriggerRef = useRef<HTMLButtonElement>(null);
 
   const toggleRecording = () => {
-    setIsRecording((prev) => !prev);
+    if (micState === "idle") {
+      setMicState("recording");
+    } else if (micState === "recording") {
+      setMicState("processing");
+      setTimeout(() => {
+        setMicState("idle");
+        setHasRecording(true);
+      }, 800);
+    }
   };
 
   const handleFinish = () => {
@@ -53,6 +64,29 @@ export default function InterviewRoom() {
       document.removeEventListener("mousedown", onClick);
     };
   }, [showHint]);
+
+  const getMicButtonClasses = () => {
+    switch (micState) {
+      case "recording":
+        return "bg-destructive text-white shadow-xl animate-pulse-recording";
+      case "processing":
+        return "bg-accent/10 text-accent border-2 border-accent shadow-md";
+      default:
+        return "bg-white border-2 border-border text-muted-foreground hover:border-accent hover:text-accent shadow-md";
+    }
+  };
+
+  const getStatusText = () => {
+    switch (micState) {
+      case "recording":
+        return { text: "Recording… Tap to stop", color: "text-destructive" };
+      case "processing":
+        return { text: "Processing Audio…", color: "text-accent" };
+      default:
+        if (hasRecording) return { text: "Ready for review", color: "text-accent" };
+        return { text: "Tap to start recording", color: "text-muted-foreground" };
+    }
+  };
 
   return (
     <div className="min-h-[calc(100vh-3.5rem)] bg-background flex flex-col">
@@ -111,60 +145,62 @@ export default function InterviewRoom() {
                 Need a Hint?
               </button>
 
-              {/* Hint tooltip/modal */}
-              {showHint && (
-                <div
-                  ref={hintRef}
-                  role="dialog"
-                  aria-modal="true"
-                  aria-labelledby="hint-title"
-                  tabIndex={-1}
-                  className="absolute left-0 top-full mt-2 w-full sm:w-96 bg-white rounded-xl border border-border shadow-2xl p-5 z-40"
-                >
-                  <div className="flex items-center justify-between mb-3">
-                    <h3
-                      id="hint-title"
-                      className="font-heading text-sm font-semibold text-foreground"
+              {/* Hint tooltip/modal — always mounted, visibility via CSS */}
+              <div
+                ref={hintRef}
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="hint-title"
+                tabIndex={-1}
+                className={`absolute left-0 top-full mt-2 w-full sm:w-96 bg-white rounded-xl border border-border shadow-2xl p-5 z-40 transition-all duration-200 ease-out ${
+                  showHint
+                    ? "opacity-100 translate-y-0 pointer-events-auto"
+                    : "opacity-0 -translate-y-1 pointer-events-none"
+                }`}
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <h3
+                    id="hint-title"
+                    className="font-heading text-sm font-semibold text-foreground"
+                  >
+                    💡 STAR Method Hint
+                  </h3>
+                  <button
+                    onClick={() => {
+                      setShowHint(false);
+                      hintTriggerRef.current?.focus();
+                    }}
+                    className="p-1 text-muted-foreground hover:text-foreground cursor-pointer transition-colors rounded"
+                    aria-label="Close hint"
+                  >
+                    <svg
+                      className="w-4 h-4"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={2.5}
                     >
-                      💡 STAR Method Hint
-                    </h3>
-                    <button
-                      onClick={() => {
-                        setShowHint(false);
-                        hintTriggerRef.current?.focus();
-                      }}
-                      className="p-1 text-muted-foreground hover:text-foreground cursor-pointer transition-colors rounded"
-                      aria-label="Close hint"
-                    >
-                      <svg
-                        className="w-4 h-4"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                        strokeWidth={2.5}
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          d="M6 18L18 6M6 6l12 12"
-                        />
-                      </svg>
-                    </button>
-                  </div>
-                  <div className="space-y-2.5">
-                    {starHints.map((h) => (
-                      <div key={h.label} className="flex gap-2">
-                        <span className="text-xs font-bold text-accent uppercase shrink-0 mt-0.5 w-14">
-                          {h.label}
-                        </span>
-                        <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
-                          {h.text}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M6 18L18 6M6 6l12 12"
+                      />
+                    </svg>
+                  </button>
                 </div>
-              )}
+                <div className="space-y-2.5">
+                  {starHints.map((h) => (
+                    <div key={h.label} className="flex gap-2">
+                      <span className="text-xs font-bold text-accent uppercase shrink-0 mt-0.5 w-14">
+                        {h.label}
+                      </span>
+                      <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
+                        {h.text}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
 
@@ -173,52 +209,79 @@ export default function InterviewRoom() {
             {/* Microphone Button */}
             <button
               onClick={toggleRecording}
-              className={`btn-active relative w-20 h-20 sm:w-24 sm:h-24 rounded-full flex items-center justify-center transition-all duration-200 cursor-pointer ${
-                isRecording
-                  ? "bg-destructive text-white shadow-xl animate-pulse-recording"
-                  : "bg-white border-2 border-border text-muted-foreground hover:border-accent hover:text-accent shadow-md"
-              }`}
-              aria-label={isRecording ? "Stop recording" : "Start recording"}
+              className={`btn-active relative w-20 h-20 sm:w-24 sm:h-24 rounded-full flex items-center justify-center transition-all duration-200 cursor-pointer ${getMicButtonClasses()}`}
+              aria-label={
+                micState === "recording"
+                  ? "Stop recording"
+                  : micState === "processing"
+                  ? "Processing audio"
+                  : "Start recording"
+              }
             >
-              <svg
-                className="w-8 h-8 sm:w-10 sm:h-10"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={1.8}
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M12 18.5a4.5 4.5 0 004.5-4.5v-6a4.5 4.5 0 00-9 0v6a4.5 4.5 0 004.5 4.5z"
-                />
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M19 10v4a7 7 0 01-14 0v-4"
-                />
-                <line x1="12" y1="18.5" x2="12" y2="22" strokeWidth={2} />
-              </svg>
+              {micState === "processing" ? (
+                <svg
+                  className="w-8 h-8 sm:w-10 sm:h-10 animate-spin-slow"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  />
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                  />
+                </svg>
+              ) : (
+                <svg
+                  className="w-8 h-8 sm:w-10 sm:h-10"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={1.8}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M12 18.5a4.5 4.5 0 004.5-4.5v-6a4.5 4.5 0 00-9 0v6a4.5 4.5 0 004.5 4.5z"
+                  />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M19 10v4a7 7 0 01-14 0v-4"
+                  />
+                  <line x1="12" y1="18.5" x2="12" y2="22" strokeWidth={2} />
+                </svg>
+              )}
 
               {/* Recording indicator dot */}
-              {isRecording && (
+              {micState === "recording" && (
                 <span className="absolute top-1 right-1 w-3 h-3 bg-white rounded-full animate-pulse" />
               )}
             </button>
 
             {/* Status label */}
             <span
-              className={`text-sm font-medium transition-all duration-200 ${
-                isRecording ? "text-destructive" : "text-muted-foreground"
-              }`}
+              className={`text-sm font-medium transition-all duration-200 ${getStatusText().color}`}
             >
-              {isRecording ? "Recording… Tap to stop" : "Tap to start recording"}
+              {getStatusText().text}
             </span>
 
             {/* Finish button */}
             <button
               onClick={handleFinish}
-              className="btn-active mt-2 px-8 py-3 rounded-lg bg-primary hover:bg-primary/90 text-white font-semibold text-base shadow-md cursor-pointer transition-all duration-200 hover:-translate-y-0.5"
+              disabled={!hasRecording}
+              className={`btn-active mt-2 px-8 py-3 rounded-lg font-semibold text-base shadow-md cursor-pointer transition-all duration-200 ${
+                hasRecording
+                  ? "bg-primary hover:bg-primary/90 text-white hover:-translate-y-0.5"
+                  : "bg-muted text-muted-foreground cursor-not-allowed opacity-50"
+              }`}
             >
               Finish &amp; Get Result
             </button>

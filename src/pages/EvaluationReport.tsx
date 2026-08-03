@@ -50,7 +50,7 @@ export default function EvaluationReport() {
         </div>
 
         {/* Score Ring */}
-        <div className="flex justify-center mb-8 sm:mb-10">
+        <div className="flex justify-center mb-8 sm:mb-10 animate-scale-in">
           <div className="relative w-32 h-32 sm:w-36 sm:h-36">
             {/* Background ring */}
             <svg className="w-full h-full -rotate-90" viewBox="0 0 36 36">
@@ -89,7 +89,7 @@ export default function EvaluationReport() {
         {/* Feedback Cards */}
         <div className="grid sm:grid-cols-2 gap-4 sm:gap-6 mb-8">
           {/* Skill Match Card */}
-          <div className="bg-white rounded-xl border border-border shadow-md p-5 sm:p-6">
+          <div className="bg-white rounded-xl border border-border shadow-md p-5 sm:p-6 animate-fade-in-up" style={{ animationDelay: '150ms' }}>
             <div className="flex items-center gap-2 mb-4">
               <svg
                 className="w-5 h-5 text-accent"
@@ -141,7 +141,7 @@ export default function EvaluationReport() {
           </div>
 
           {/* Confidence & Delivery Card */}
-          <div className="bg-white rounded-xl border border-border shadow-md p-5 sm:p-6">
+          <div className="bg-white rounded-xl border border-border shadow-md p-5 sm:p-6 animate-fade-in-up" style={{ animationDelay: '350ms' }}>
             <div className="flex items-center gap-2 mb-4">
               <svg
                 className="w-5 h-5 text-accent"
@@ -218,7 +218,8 @@ export default function EvaluationReport() {
         <div className="text-center">
           <button
             onClick={handleTryAgain}
-            className="btn-active px-8 py-3 rounded-lg bg-primary hover:bg-primary/90 text-white font-semibold text-base shadow-md cursor-pointer transition-all duration-200 hover:-translate-y-0.5"
+            className="btn-active px-8 py-3 rounded-lg bg-primary hover:bg-primary/90 text-white font-semibold text-base shadow-md cursor-pointer transition-all duration-200 hover:-translate-y-0.5 animate-fade-in-up"
+            style={{ animationDelay: '550ms' }}
           >
             Try Another Role
           </button>
