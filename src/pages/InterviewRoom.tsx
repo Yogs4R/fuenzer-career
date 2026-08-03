@@ -1,12 +1,22 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
 const mockQuestion =
   "Tell me about a time you optimised a complex web application. What approach did you take and what was the outcome?";
 
+const starHints = [
+  { label: "Situation", text: "Describe the context — the project, team, and what made it complex." },
+  { label: "Task", text: "Explain your specific responsibility and what needed to be achieved." },
+  { label: "Action", text: "Walk through the steps you took — tools, techniques, decisions." },
+  { label: "Result", text: "Share the measurable outcome — faster load times, happier users, etc." },
+];
+
 export default function InterviewRoom() {
   const [isRecording, setIsRecording] = useState(false);
+  const [showHint, setShowHint] = useState(false);
   const navigate = useNavigate();
+  const hintRef = useRef<HTMLDivElement>(null);
+  const hintTriggerRef = useRef<HTMLButtonElement>(null);
 
   const toggleRecording = () => {
     setIsRecording((prev) => !prev);
@@ -15,6 +25,34 @@ export default function InterviewRoom() {
   const handleFinish = () => {
     navigate("/report");
   };
+
+  /* ---- close hint on outside click / Escape ---- */
+  useEffect(() => {
+    if (!showHint) return;
+
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setShowHint(false);
+        hintTriggerRef.current?.focus();
+      }
+    };
+    const onClick = (e: MouseEvent) => {
+      if (
+        hintRef.current &&
+        !hintRef.current.contains(e.target as Node) &&
+        hintTriggerRef.current &&
+        !hintTriggerRef.current.contains(e.target as Node)
+      ) {
+        setShowHint(false);
+      }
+    };
+    document.addEventListener("keydown", onKey);
+    document.addEventListener("mousedown", onClick);
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.removeEventListener("mousedown", onClick);
+    };
+  }, [showHint]);
 
   return (
     <div className="min-h-[calc(100vh-3.5rem)] bg-background flex flex-col">
@@ -47,7 +85,7 @@ export default function InterviewRoom() {
       <div className="flex-1 flex items-center justify-center px-4 sm:px-6 py-8">
         <div className="w-full max-w-2xl">
           {/* Question Card */}
-          <div className="bg-white rounded-xl border border-border shadow-lg p-6 sm:p-8 mb-8">
+          <div className="bg-white rounded-xl border border-border shadow-lg p-6 sm:p-8 mb-6">
             <div className="flex items-center gap-2 mb-4">
               <span className="w-2 h-2 rounded-full bg-accent animate-pulse" />
               <span className="text-xs font-semibold uppercase tracking-wider text-accent">
@@ -61,6 +99,73 @@ export default function InterviewRoom() {
               Take a moment to gather your thoughts, then press the microphone
               and speak your answer clearly.
             </p>
+
+            {/* Need a Hint? button */}
+            <div className="mt-4 relative">
+              <button
+                ref={hintTriggerRef}
+                onClick={() => setShowHint((p) => !p)}
+                className="inline-flex items-center gap-1.5 text-sm font-medium text-accent hover:text-accent/80 cursor-pointer transition-colors duration-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring rounded"
+              >
+                <span className="text-base">💡</span>
+                Need a Hint?
+              </button>
+
+              {/* Hint tooltip/modal */}
+              {showHint && (
+                <div
+                  ref={hintRef}
+                  role="dialog"
+                  aria-modal="true"
+                  aria-labelledby="hint-title"
+                  tabIndex={-1}
+                  className="absolute left-0 top-full mt-2 w-full sm:w-96 bg-white rounded-xl border border-border shadow-2xl p-5 z-40"
+                >
+                  <div className="flex items-center justify-between mb-3">
+                    <h3
+                      id="hint-title"
+                      className="font-heading text-sm font-semibold text-foreground"
+                    >
+                      💡 STAR Method Hint
+                    </h3>
+                    <button
+                      onClick={() => {
+                        setShowHint(false);
+                        hintTriggerRef.current?.focus();
+                      }}
+                      className="p-1 text-muted-foreground hover:text-foreground cursor-pointer transition-colors rounded"
+                      aria-label="Close hint"
+                    >
+                      <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        strokeWidth={2.5}
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M6 18L18 6M6 6l12 12"
+                        />
+                      </svg>
+                    </button>
+                  </div>
+                  <div className="space-y-2.5">
+                    {starHints.map((h) => (
+                      <div key={h.label} className="flex gap-2">
+                        <span className="text-xs font-bold text-accent uppercase shrink-0 mt-0.5 w-14">
+                          {h.label}
+                        </span>
+                        <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
+                          {h.text}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Microphone + Controls */}
@@ -104,9 +209,7 @@ export default function InterviewRoom() {
             {/* Status label */}
             <span
               className={`text-sm font-medium transition-all duration-200 ${
-                isRecording
-                  ? "text-destructive"
-                  : "text-muted-foreground"
+                isRecording ? "text-destructive" : "text-muted-foreground"
               }`}
             >
               {isRecording ? "Recording… Tap to stop" : "Tap to start recording"}
