@@ -46,6 +46,12 @@ function AnimatedBar({ score, delay }: { score: number; delay: number }) {
 export default function EvaluationReport() {
   const navigate = useNavigate();
   const [question, setQuestion] = useState(0);
+  const [scoreVisible, setScoreVisible] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setScoreVisible(true), 200);
+    return () => clearTimeout(timer);
+  }, []);
 
   const handleTryAgain = () => {
     navigate("/");
@@ -54,6 +60,7 @@ export default function EvaluationReport() {
   /* Compute the circle dashoffset for the score ring */
   const circumference = 2 * Math.PI * 42;
   const dashoffset = circumference - (overallScore / 100) * circumference;
+  const currentDashoffset = scoreVisible ? dashoffset : circumference;
 
   return (
     <div className="min-h-[calc(100vh-3.5rem)] bg-background">
@@ -91,7 +98,7 @@ export default function EvaluationReport() {
                 strokeWidth="7"
                 strokeLinecap="round"
                 strokeDasharray={circumference}
-                strokeDashoffset={dashoffset}
+                strokeDashoffset={currentDashoffset}
                 className="transition-all duration-700"
               />
               <defs>

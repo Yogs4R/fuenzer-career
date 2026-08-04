@@ -220,34 +220,8 @@ export default function NavBar() {
   return (
     <nav className="bg-primary text-on-primary shadow-md sticky top-0 z-50">
       <div className="w-full px-2 sm:px-4 lg:px-6 h-14 flex items-center gap-1 sm:gap-2 relative">
-        {/* Left: Hamburger + Logo */}
-        <div className="flex items-center gap-1 sm:gap-3">
-          {/* Hamburger (mobile) */}
-          <button
-            onClick={() => setMobileOpen((p) => !p)}
-            className="sm:hidden p-1.5 rounded-md text-white/80 hover:text-white hover:bg-white/10 cursor-pointer transition-all duration-200"
-            aria-label={mobileOpen ? "Close navigation menu" : "Open navigation menu"}
-            aria-expanded={mobileOpen}
-          >
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              {mobileOpen ? (
-                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-              ) : (
-                <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
-              )}
-            </svg>
-          </button>
-
-          <Link
-            to="/"
-            className="font-heading text-sm sm:text-lg md:text-xl font-semibold tracking-tight cursor-pointer transition-opacity duration-200 hover:opacity-90 whitespace-nowrap"
-          >
-            Fuenzer Career
-          </Link>
-        </div>
-
-        {/* Desktop nav links — centered in the available space */}
-        <div className="hidden sm:flex flex-1 items-center justify-center gap-3 lg:gap-5">
+        {/* Desktop nav links — on the left of the logo */}
+        <div className="hidden sm:flex items-center gap-3 lg:gap-5">
           <a
             href="/#trending"
             onClick={(e) => handleSectionLink(e, "trending", navigate)}
@@ -278,12 +252,39 @@ export default function NavBar() {
           </a>
         </div>
 
+        {/* Logo */}
+        <Link
+          to="/"
+          className="font-heading text-sm sm:text-lg md:text-xl font-semibold tracking-tight cursor-pointer transition-opacity duration-200 hover:opacity-90 whitespace-nowrap"
+        >
+          Fuenzer Career
+        </Link>
+
+        {/* Spacer */}
+        <div className="flex-1" />
+
         {/* Right: icons + controls */}
         <div className="flex items-center gap-1 sm:gap-2 text-sm font-medium text-white/80">
-          {/* History icon */}
+          {/* Hamburger (mobile only) — now on the right of logo */}
+          <button
+            onClick={() => setMobileOpen((p) => !p)}
+            className="sm:hidden p-1.5 rounded-md text-white/80 hover:text-white hover:bg-white/10 cursor-pointer transition-all duration-200"
+            aria-label={mobileOpen ? "Close navigation menu" : "Open navigation menu"}
+            aria-expanded={mobileOpen}
+          >
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              {mobileOpen ? (
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              ) : (
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+              )}
+            </svg>
+          </button>
+
+          {/* History icon — hidden on mobile */}
           <button
             onClick={openHistory}
-            className="p-1.5 rounded-md text-white/70 hover:text-white hover:bg-white/10 cursor-pointer transition-all duration-200"
+            className="hidden sm:inline-flex p-1.5 rounded-md text-white/70 hover:text-white hover:bg-white/10 cursor-pointer transition-all duration-200"
             aria-label="History"
             title="History"
           >
@@ -292,10 +293,10 @@ export default function NavBar() {
             </svg>
           </button>
 
-          {/* Notification icon */}
+          {/* Notification icon — hidden on mobile */}
           <button
             onClick={openNotif}
-            className="relative p-1.5 rounded-md text-white/70 hover:text-white hover:bg-white/10 cursor-pointer transition-all duration-200"
+            className="hidden sm:inline-flex relative p-1.5 rounded-md text-white/70 hover:text-white hover:bg-white/10 cursor-pointer transition-all duration-200"
             aria-label="Notifications"
             title="Notifications"
           >
@@ -522,44 +523,31 @@ export default function NavBar() {
               >
                 FAQ
               </a>
-              <hr className="my-3 border-border" />
+            </div>
+
+            {/* Mobile sidebar: history & notification buttons */}
+            <div className="px-3 pb-4 pt-2 border-t border-border space-y-1">
               <button
-                onClick={() => { setMobileOpen(false); openHistory(); }}
-                className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm font-medium text-foreground hover:bg-muted transition-colors"
+                onClick={() => { openHistory(); setMobileOpen(false); }}
+                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-foreground hover:bg-muted transition-colors cursor-pointer"
               >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                <svg className="w-5 h-5 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-                History
+                Practice History
               </button>
               <button
-                onClick={() => { setMobileOpen(false); openNotif(); }}
-                className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm font-medium text-foreground hover:bg-muted transition-colors"
+                onClick={() => { openNotif(); setMobileOpen(false); }}
+                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-foreground hover:bg-muted transition-colors cursor-pointer"
               >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                <svg className="w-5 h-5 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" />
                 </svg>
                 Notifications
+                <span className="ml-auto w-2 h-2 rounded-full bg-destructive" aria-hidden="true" />
               </button>
             </div>
 
-            {/* Panel footer — Sign In + Sign Up */}
-            <div className="px-3 py-4 border-t border-border space-y-2">
-              <Link
-                to="/login"
-                onClick={() => setMobileOpen(false)}
-                className="flex items-center justify-center w-full px-4 py-2.5 rounded-lg bg-primary text-white font-semibold text-sm transition-all duration-200 hover:bg-primary/90"
-              >
-                Sign In
-              </Link>
-              <Link
-                to="/signup"
-                onClick={() => setMobileOpen(false)}
-                className="flex items-center justify-center w-full px-4 py-2.5 rounded-lg bg-accent text-white font-semibold text-sm transition-all duration-200 hover:bg-accent/90"
-              >
-                Sign Up
-              </Link>
-            </div>
           </div>
         </>
       )}
