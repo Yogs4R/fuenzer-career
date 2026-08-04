@@ -5,6 +5,9 @@ export function handleSectionLink(e: React.MouseEvent<HTMLAnchorElement>, id: st
     if (el) {
       el.scrollIntoView({ behavior: "smooth" });
     }
+  } else {
+    // Explicitly redirect to /#id so the Dashboard's hash effect scrolls into view
+    e.preventDefault();
+    window.location.href = "/#" + id;
   }
-  // On other routes: browser navigates to /#id — full page load, then Dashboard hash effect scrolls
 }

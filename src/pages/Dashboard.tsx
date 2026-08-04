@@ -171,16 +171,16 @@ export default function Dashboard() {
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
           </svg>
-          <p className="font-heading text-lg font-semibold text-foreground mt-6">
+          <p className="font-heading text-base sm:text-lg font-semibold text-foreground mt-6 px-4 text-center leading-snug">
             Agent is fetching live market data and preparing questions…
           </p>
-          <p className="text-sm text-muted-foreground mt-2">This will only take a moment.</p>
+          <p className="text-xs sm:text-sm text-muted-foreground mt-2">This will only take a moment.</p>
         </div>
       )}
 
       {/* ========= HERO SECTION ========= */}
       <section id="hero" className="bg-gradient-to-br from-primary via-primary to-secondary text-on-primary">
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 pt-16 pb-20 sm:pt-24 sm:pb-28 text-center">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 pt-24 pb-32 sm:pt-36 sm:pb-44 text-center">
           <h1 className="font-heading text-4xl sm:text-5xl lg:text-6xl font-bold leading-tight tracking-tight">
             Nail Your Next Interview
           </h1>
@@ -268,17 +268,7 @@ export default function Dashboard() {
                 <p className="mt-1.5 text-sm text-muted-foreground max-w-[260px] leading-relaxed">{agent.subtitle}</p>
               </div>
             ))}
-            {/* Desktop connecting arrows — vertically centered with the agent cards */}
-            <div className="hidden md:flex md:col-start-2 md:col-span-1 justify-center items-center self-stretch" aria-hidden="true">
-              <svg className="w-8 h-8 text-accent/30" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
-              </svg>
-            </div>
-            <div className="hidden md:flex md:col-start-4 md:col-span-1 justify-center items-center self-stretch" aria-hidden="true">
-              <svg className="w-8 h-8 text-accent/30" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
-              </svg>
-            </div>
+            
           </div>
         </div>
       </section>

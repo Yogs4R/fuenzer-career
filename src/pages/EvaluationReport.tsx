@@ -39,7 +39,7 @@ function AnimatedBar({ score, delay }: { score: number; delay: number }) {
   return (
     <div className="w-full h-2.5 bg-gray-200 rounded-full overflow-hidden">
       <div
-        className="h-full rounded-full bg-gray-500 transition-all duration-1000 ease-out"
+        className="h-full rounded-full bg-accent transition-all duration-1000 ease-out"
         style={{ width: `${width}%` }}
       />
     </div>
@@ -195,7 +195,7 @@ export default function EvaluationReport() {
                     className={`w-7 h-7 rounded-md text-xs font-medium cursor-pointer transition-colors ${
                       i === question
                         ? "bg-accent text-white"
-                        : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                        : "text-muted-foreground bg-muted hover:text-foreground hover:bg-muted/70"
                     }`}
                     aria-label={`Question ${i + 1}`}
                   >

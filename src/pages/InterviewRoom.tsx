@@ -32,8 +32,6 @@ export default function InterviewRoom() {
   const [showHint, setShowHint] = useState(false);
   const [elapsed, setElapsed] = useState(0); // seconds
 
-  const hintRef = useRef<HTMLDivElement>(null);
-  const hintTriggerRef = useRef<HTMLButtonElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   /* ── Audio visualiser ── */
@@ -175,26 +173,6 @@ export default function InterviewRoom() {
     setShowHint(false);
   };
 
-  /* ---- close hint on outside click / Escape ---- */
-  useEffect(() => {
-    if (!showHint) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") { setShowHint(false); hintTriggerRef.current?.focus(); }
-    };
-    const onClick = (e: MouseEvent) => {
-      if (
-        hintRef.current && !hintRef.current.contains(e.target as Node) &&
-        hintTriggerRef.current && !hintTriggerRef.current.contains(e.target as Node)
-      ) { setShowHint(false); }
-    };
-    document.addEventListener("keydown", onKey);
-    document.addEventListener("mousedown", onClick);
-    return () => {
-      document.removeEventListener("keydown", onKey);
-      document.removeEventListener("mousedown", onClick);
-    };
-  }, [showHint]);
-
   /* Cleanup on unmount */
   useEffect(() => {
     return () => {
@@ -271,72 +249,58 @@ export default function InterviewRoom() {
               Take a moment to gather your thoughts, then press the microphone and speak your answer clearly.
             </p>
 
-            {/* Need a Hint? */}
-            <div className="mt-4 relative">
+            {/* Need a Hint? — inline collapsible inside the question card */}
+            <div className="mt-4">
               <button
-                ref={hintTriggerRef}
                 onClick={() => setShowHint((p) => !p)}
                 className="inline-flex items-center gap-1.5 text-sm font-medium text-accent hover:text-accent/80 cursor-pointer transition-colors duration-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring rounded"
+                aria-expanded={showHint}
+                aria-controls="star-hint-panel"
               >
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 18v-5.25m0 0a6.01 6.01 0 001.5-.189m-1.5.189a6.01 6.01 0 01-1.5-.189m3.75 7.478a12.06 12.06 0 01-4.5 0m3.75 2.383a14.406 14.406 0 01-3 0M14.25 18v-.192c0-.983.658-1.823 1.508-2.316a7.5 7.5 0 10-7.517 0c.85.493 1.509 1.333 1.509 2.316V18" />
                 </svg>
-                Need a Hint?
+                {showHint ? "Hide Hint" : "Need a Hint?"}
               </button>
 
-              {/* Hint panel — wider on desktop */}
+              {/* Inline collapsible STAR hints */}
               <div
-                ref={hintRef}
-                role="dialog"
-                aria-modal="true"
+                id="star-hint-panel"
+                role="region"
                 aria-labelledby="hint-title"
-                tabIndex={-1}
-                className={`absolute left-0 top-full mt-2 w-full sm:w-[540px] bg-white rounded-xl border border-border shadow-2xl p-5 z-40 transition-all duration-200 ease-out ${
-                  showHint
-                    ? "opacity-100 translate-y-0 pointer-events-auto"
-                    : "opacity-0 -translate-y-1 pointer-events-none"
+                className={`transition-all duration-200 ease-in-out overflow-hidden ${
+                  showHint ? "max-h-[40rem] opacity-100 mt-3" : "max-h-0 opacity-0"
                 }`}
               >
-                <div className="flex items-center justify-between mb-3">
+                <div className="bg-muted/40 rounded-xl border border-border p-4 sm:p-5 space-y-3">
                   <h3 id="hint-title" className="font-heading text-sm font-semibold text-foreground flex items-center gap-1.5">
                     <svg className="w-4 h-4 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M12 18v-5.25m0 0a6.01 6.01 0 001.5-.189m-1.5.189a6.01 6.01 0 01-1.5-.189m3.75 7.478a12.06 12.06 0 01-4.5 0m3.75 2.383a14.406 14.406 0 01-3 0M14.25 18v-.192c0-.983.658-1.823 1.508-2.316a7.5 7.5 0 10-7.517 0c.85.493 1.509 1.333 1.509 2.316V18" />
                     </svg>
                     STAR Method Hint
                   </h3>
-                  <button
-                    onClick={() => { setShowHint(false); hintTriggerRef.current?.focus(); }}
-                    className="p-1 text-muted-foreground hover:text-foreground cursor-pointer transition-colors rounded"
-                    aria-label="Close hint"
-                  >
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {starHints.map((h) => (
-                    <div key={h.label} className="bg-muted/50 rounded-lg p-3">
-                      <span className="text-xs font-bold text-accent uppercase block mb-1">
-                        {h.label}
-                      </span>
-                      <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
-                        {h.text}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {starHints.map((h) => (
+                      <div key={h.label} className="bg-white rounded-lg p-3 border border-border/50">
+                        <span className="text-xs font-bold text-accent uppercase block mb-1">
+                          {h.label}
+                        </span>
+                        <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
+                          {h.text}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="bg-accent/5 border border-accent/20 rounded-lg p-3">
+                    <div className="flex items-start gap-2">
+                      <svg className="w-4 h-4 text-accent mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 18v-5.25m0 0a6.01 6.01 0 001.5-.189m-1.5.189a6.01 6.01 0 01-1.5-.189m3.75 7.478a12.06 12.06 0 01-4.5 0m3.75 2.383a14.406 14.406 0 01-3 0M14.25 18v-.192c0-.983.658-1.823 1.508-2.316a7.5 7.5 0 10-7.517 0c.85.493 1.509 1.333 1.509 2.316V18" />
+                      </svg>
+                      <p className="text-xs sm:text-sm text-foreground leading-relaxed">
+                        <span className="font-semibold">Interviewer Agent Suggestion:</span>{" "}
+                        For this question about an optimisation project, try framing your answer around a specific performance metric. For example: &quot;I reduced page load time from 8s to 2s by implementing lazy loading and image compression.&quot;
                       </p>
                     </div>
-                  ))}
-                </div>
-
-                {/* Mock Interviewer Agent suggestion */}
-                <div className="bg-accent/5 border border-accent/20 rounded-lg p-3 mt-3">
-                  <div className="flex items-start gap-2">
-                    <svg className="w-4 h-4 text-accent mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 18v-5.25m0 0a6.01 6.01 0 001.5-.189m-1.5.189a6.01 6.01 0 01-1.5-.189m3.75 7.478a12.06 12.06 0 01-4.5 0m3.75 2.383a14.406 14.406 0 01-3 0M14.25 18v-.192c0-.983.658-1.823 1.508-2.316a7.5 7.5 0 10-7.517 0c.85.493 1.509 1.333 1.509 2.316V18" />
-                    </svg>
-                    <p className="text-xs sm:text-sm text-foreground leading-relaxed">
-                      <span className="font-semibold">Interviewer Agent Suggestion:</span>{" "}
-                      For this question about an optimisation project, try framing your answer around a specific performance metric. For example: &quot;I reduced page load time from 8s to 2s by implementing lazy loading and image compression.&quot;
-                    </p>
                   </div>
                 </div>
               </div>

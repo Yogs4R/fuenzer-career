@@ -60,7 +60,7 @@ function PaginationBar({
           className={`w-7 h-7 rounded-md text-xs font-medium cursor-pointer transition-colors ${
             i + 1 === current
               ? "bg-accent text-white"
-              : "text-muted-foreground hover:text-foreground hover:bg-muted"
+              : "bg-muted text-muted-foreground hover:text-foreground hover:bg-muted/70"
           }`}
           aria-label={`Page ${i + 1}`}
         >
