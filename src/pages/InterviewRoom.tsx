@@ -6,7 +6,7 @@ const mockQuestions = [
   "Describe a situation where you had to work under a tight deadline. How did you manage your time and deliver?",
   "Can you walk me through a project where you collaborated with a cross-functional team? What was your role?",
   "Tell me about a time you received constructive criticism. How did you respond and what did you learn?",
-  "Describe a technical challenge you faced that you couldn\u2019t solve immediately. How did you work through it?",
+  "Describe a technical challenge you faced that you couldn't solve immediately. How did you work through it?",
   "Give an example of a time you took initiative beyond your job description. What motivated you?",
   "Tell me about a time you had to communicate a complex idea to a non-technical audience. How did you approach it?",
   "Describe a situation where you disagreed with a teammate or manager. How was it resolved?",
@@ -158,6 +158,23 @@ export default function InterviewRoom() {
     }
   };
 
+  const handleSkip = () => {
+    if (questionIndex < mockQuestions.length - 1) {
+      setQuestionIndex((p) => p + 1);
+      setHasRecording(false);
+      setShowHint(false);
+    } else {
+      navigate("/report");
+    }
+  };
+
+  const handleRetry = () => {
+    setHasRecording(false);
+    setMicState("idle");
+    setElapsed(0);
+    setShowHint(false);
+  };
+
   /* ---- close hint on outside click / Escape ---- */
   useEffect(() => {
     if (!showHint) return;
@@ -210,9 +227,9 @@ export default function InterviewRoom() {
   const getStatusText = () => {
     switch (micState) {
       case "recording":
-        return { text: "Recording\u2026 Tap to stop", color: "text-destructive" };
+        return { text: "Recording... Tap to stop", color: "text-destructive" };
       case "processing":
-        return { text: "Processing Audio\u2026", color: "text-accent" };
+        return { text: "Processing Audio...", color: "text-accent" };
       default:
         if (hasRecording) return { text: "Answer recorded", color: "text-accent" };
         return { text: "Tap to start recording", color: "text-muted-foreground" };
@@ -261,7 +278,9 @@ export default function InterviewRoom() {
                 onClick={() => setShowHint((p) => !p)}
                 className="inline-flex items-center gap-1.5 text-sm font-medium text-accent hover:text-accent/80 cursor-pointer transition-colors duration-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring rounded"
               >
-                <span className="text-base">\uD83D\uDCA1</span>
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 18v-5.25m0 0a6.01 6.01 0 001.5-.189m-1.5.189a6.01 6.01 0 01-1.5-.189m3.75 7.478a12.06 12.06 0 01-4.5 0m3.75 2.383a14.406 14.406 0 01-3 0M14.25 18v-.192c0-.983.658-1.823 1.508-2.316a7.5 7.5 0 10-7.517 0c.85.493 1.509 1.333 1.509 2.316V18" />
+                </svg>
                 Need a Hint?
               </button>
 
@@ -279,8 +298,11 @@ export default function InterviewRoom() {
                 }`}
               >
                 <div className="flex items-center justify-between mb-3">
-                  <h3 id="hint-title" className="font-heading text-sm font-semibold text-foreground">
-                    \uD83D\uDCA1 STAR Method Hint
+                  <h3 id="hint-title" className="font-heading text-sm font-semibold text-foreground flex items-center gap-1.5">
+                    <svg className="w-4 h-4 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 18v-5.25m0 0a6.01 6.01 0 001.5-.189m-1.5.189a6.01 6.01 0 01-1.5-.189m3.75 7.478a12.06 12.06 0 01-4.5 0m3.75 2.383a14.406 14.406 0 01-3 0M14.25 18v-.192c0-.983.658-1.823 1.508-2.316a7.5 7.5 0 10-7.517 0c.85.493 1.509 1.333 1.509 2.316V18" />
+                    </svg>
+                    STAR Method Hint
                   </h3>
                   <button
                     onClick={() => { setShowHint(false); hintTriggerRef.current?.focus(); }}
@@ -359,15 +381,43 @@ export default function InterviewRoom() {
               )}
             </div>
 
-            {/* Finish / Next button */}
-            {hasRecording && (
-              <button
-                onClick={handleNext}
-                className="btn-active mt-2 px-8 py-3 rounded-lg font-semibold text-base shadow-md cursor-pointer transition-all duration-200 bg-primary hover:bg-primary/90 text-white hover:-translate-y-0.5"
-              >
-                {questionIndex < mockQuestions.length - 1 ? "Next Question" : "Finish & Get Result"}
-              </button>
-            )}
+            {/* Action buttons row */}
+            <div className="flex items-center gap-4 mt-2">
+              {/* Skip button (always visible) */}
+              {micState === "idle" && !hasRecording && (
+                <button
+                  onClick={handleSkip}
+                  className="btn-active px-6 py-2.5 rounded-lg font-semibold text-sm cursor-pointer transition-all duration-200 border-2 border-border text-muted-foreground hover:border-accent hover:text-accent hover:-translate-y-0.5"
+                >
+                  Skip Question
+                </button>
+              )}
+
+              {/* Retry button (visible after recording) */}
+              {hasRecording && (
+                <button
+                  onClick={handleRetry}
+                  className="btn-active px-6 py-2.5 rounded-lg font-semibold text-sm cursor-pointer transition-all duration-200 border-2 border-border text-muted-foreground hover:border-amber-500 hover:text-amber-600 hover:-translate-y-0.5"
+                >
+                  <span className="flex items-center gap-1.5">
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182" />
+                    </svg>
+                    Retry
+                  </span>
+                </button>
+              )}
+
+              {/* Next / Finish button */}
+              {hasRecording && (
+                <button
+                  onClick={handleNext}
+                  className="btn-active px-8 py-2.5 rounded-lg font-semibold text-sm shadow-md cursor-pointer transition-all duration-200 bg-primary hover:bg-primary/90 text-white hover:-translate-y-0.5"
+                >
+                  {questionIndex < mockQuestions.length - 1 ? "Next Question" : "Finish & Get Result"}
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </div>

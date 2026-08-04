@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { Link } from "react-router-dom";
 
 const languages = [
@@ -9,11 +9,173 @@ const languages = [
   { code: "FR", label: "Français" },
 ];
 
+const PAGE_SIZE = 5;
+
+/* ── Mock data generators ── */
+const mockHistoryItems = Array.from({ length: 13 }, (_, i) => ({
+  id: i + 1,
+  role: ["Frontend Developer", "Backend Engineer", "Full Stack Dev", "DevOps Lead", "Data Analyst", "UX Designer", "Product Manager", "QA Engineer", "Tech Lead", "Engineering Manager", "Software Architect", "Mobile Dev", "Cloud Engineer"][i % 13],
+  date: `2025-0${(i % 9) + 1}-${String((i * 3) % 28 + 1).padStart(2, "0")}`,
+  score: 60 + (i * 3) % 35,
+}));
+
+const mockNotifications = Array.from({ length: 11 }, (_, i) => ({
+  id: i + 1,
+  title: ["New role added", "Practice reminder", "Score milestone", "Tip of the day", "New feature", "Leaderboard update", "Challenge available", "Badge earned", "Peer review", "Session saved", "Achievement unlocked"][i % 11],
+  description: `Notification message ${i + 1} — click to view details.`,
+}));
+
+/* ── Pagination component ── */
+function PaginationBar({
+  current,
+  total,
+  onChange,
+}: {
+  current: number;
+  total: number;
+  onChange: (page: number) => void;
+}) {
+  if (total <= 1) return null;
+  return (
+    <div className="flex items-center justify-center gap-2 mt-4 pt-3 border-t border-border">
+      <button
+        onClick={() => onChange(current - 1)}
+        disabled={current === 1}
+        className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-colors"
+        aria-label="Previous page"
+      >
+        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+        </svg>
+      </button>
+      {Array.from({ length: total }, (_, i) => (
+        <button
+          key={i}
+          onClick={() => onChange(i + 1)}
+          className={`w-7 h-7 rounded-md text-xs font-medium cursor-pointer transition-colors ${
+            i + 1 === current
+              ? "bg-accent text-white"
+              : "text-muted-foreground hover:text-foreground hover:bg-muted"
+          }`}
+          aria-label={`Page ${i + 1}`}
+        >
+          {i + 1}
+        </button>
+      ))}
+      <button
+        onClick={() => onChange(current + 1)}
+        disabled={current === total}
+        className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-colors"
+        aria-label="Next page"
+      >
+        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+        </svg>
+      </button>
+    </div>
+  );
+}
+
+/* ── Modal overlay component ── */
+function ModalOverlay({
+  open,
+  onClose,
+  title,
+  icon,
+  children,
+}: {
+  open: boolean;
+  onClose: () => void;
+  title: string;
+  icon: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  const modalRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    const onClick = (e: MouseEvent) => {
+      if (modalRef.current && !modalRef.current.contains(e.target as Node)) {
+        onClose();
+      }
+    };
+    document.addEventListener("keydown", onKey);
+    document.addEventListener("mousedown", onClick);
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.removeEventListener("mousedown", onClick);
+    };
+  }, [open, onClose]);
+
+  if (!open) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm p-4">
+      <div
+        ref={modalRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label={title}
+        className="w-full max-w-md bg-white rounded-2xl shadow-2xl border border-border overflow-hidden animate-scale-in"
+      >
+        <div className="flex items-center justify-between px-5 py-4 border-b border-border">
+          <div className="flex items-center gap-2">
+            {icon}
+            <h2 className="font-heading text-base font-semibold text-foreground">{title}</h2>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted cursor-pointer transition-colors"
+            aria-label="Close"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        <div className="px-5 py-4 max-h-[60vh] overflow-y-auto">{children}</div>
+      </div>
+    </div>
+  );
+}
+
 export default function NavBar() {
   const [lang, setLang] = useState("EN");
   const [langOpen, setLangOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const langRef = useRef<HTMLDivElement>(null);
+
+  /* ── Modal state ── */
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [notifOpen, setNotifOpen] = useState(false);
+  const [historyPage, setHistoryPage] = useState(1);
+  const [notifPage, setNotifPage] = useState(1);
+
+  /* ── Paginated data ── */
+  const historyTotal = Math.ceil(mockHistoryItems.length / PAGE_SIZE);
+  const notifTotal = Math.ceil(mockNotifications.length / PAGE_SIZE);
+
+  const paginatedHistory = useMemo(
+    () => mockHistoryItems.slice((historyPage - 1) * PAGE_SIZE, historyPage * PAGE_SIZE),
+    [historyPage],
+  );
+  const paginatedNotifs = useMemo(
+    () => mockNotifications.slice((notifPage - 1) * PAGE_SIZE, notifPage * PAGE_SIZE),
+    [notifPage],
+  );
+
+  /* Reset page when opening modal */
+  const openHistory = () => {
+    setHistoryPage(1);
+    setHistoryOpen(true);
+  };
+  const openNotif = () => {
+    setNotifPage(1);
+    setNotifOpen(true);
+  };
 
   /* ── Close language dropdown on outside click ── */
   useEffect(() => {
@@ -49,9 +211,9 @@ export default function NavBar() {
 
   return (
     <nav className="bg-primary text-on-primary shadow-md sticky top-0 z-50">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between">
+      <div className="max-w-6xl mx-auto px-3 sm:px-6 lg:px-8 h-14 flex items-center justify-between gap-1 sm:gap-2">
         {/* Left: Hamburger + Logo */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-1 sm:gap-3 shrink-0">
           {/* Hamburger (mobile) */}
           <button
             onClick={() => setMobileOpen((p) => !p)}
@@ -70,32 +232,33 @@ export default function NavBar() {
 
           <Link
             to="/"
-            className="font-heading text-lg sm:text-xl font-semibold tracking-tight cursor-pointer transition-opacity duration-200 hover:opacity-90"
+            className="font-heading text-sm sm:text-lg md:text-xl font-semibold tracking-tight cursor-pointer transition-opacity duration-200 hover:opacity-90 whitespace-nowrap"
           >
             Fuenzer Career
           </Link>
         </div>
 
-        {/* Right: icons + controls */}
-        <div className="flex items-center gap-2 sm:gap-3 text-sm font-medium text-white/80">
-          {/* Desktop nav links */}
-          <div className="hidden sm:flex items-center gap-4 mr-2">
-            <a
-              href="#trending"
-              className="text-white/70 hover:text-white transition-colors duration-200 text-sm"
-            >
-              Trending
-            </a>
-            <a
-              href="#how-it-works"
-              className="text-white/70 hover:text-white transition-colors duration-200 text-sm"
-            >
-              How It Works
-            </a>
-          </div>
+        {/* Desktop nav links (inline, before icon controls) */}
+        <div className="hidden sm:flex items-center gap-3 lg:gap-5 mr-auto ml-4 lg:ml-8">
+          <a
+            href="#trending"
+            className="text-white/70 hover:text-white transition-colors duration-200 text-xs lg:text-sm whitespace-nowrap"
+          >
+            Trending
+          </a>
+          <a
+            href="#how-it-works"
+            className="text-white/70 hover:text-white transition-colors duration-200 text-xs lg:text-sm whitespace-nowrap"
+          >
+            How It Works
+          </a>
+        </div>
 
+        {/* Right: icons + controls */}
+        <div className="flex items-center gap-1 sm:gap-2 text-sm font-medium text-white/80 shrink-0">
           {/* History icon */}
           <button
+            onClick={openHistory}
             className="p-1.5 rounded-md text-white/70 hover:text-white hover:bg-white/10 cursor-pointer transition-all duration-200"
             aria-label="History"
             title="History"
@@ -107,6 +270,7 @@ export default function NavBar() {
 
           {/* Notification icon */}
           <button
+            onClick={openNotif}
             className="relative p-1.5 rounded-md text-white/70 hover:text-white hover:bg-white/10 cursor-pointer transition-all duration-200"
             aria-label="Notifications"
             title="Notifications"
@@ -121,7 +285,7 @@ export default function NavBar() {
           <div ref={langRef} className="relative">
             <button
               onClick={() => setLangOpen((p) => !p)}
-              className="flex items-center gap-1 px-2.5 py-1.5 rounded-md border border-white/20 text-xs font-semibold cursor-pointer transition-all duration-200 hover:border-white/40 hover:bg-white/10"
+              className="flex items-center gap-1 px-2 py-1.5 rounded-md border border-white/20 text-xs font-semibold cursor-pointer transition-all duration-200 hover:border-white/40 hover:bg-white/10"
               aria-haspopup="listbox"
               aria-expanded={langOpen}
               aria-label="Select language"
@@ -174,18 +338,70 @@ export default function NavBar() {
             )}
           </div>
 
-          {/* Sign In / Sign Up */}
+          {/* Sign In (clean — no icon) */}
           <Link
             to="/login"
-            className="hidden sm:inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-md bg-white/15 hover:bg-white/25 text-white font-semibold text-xs cursor-pointer transition-all duration-200 hover:-translate-y-0.5"
+            className="hidden sm:inline-flex items-center px-3.5 py-1.5 rounded-md bg-white/15 hover:bg-white/25 text-white font-semibold text-xs cursor-pointer transition-all duration-200 hover:-translate-y-0.5"
           >
-            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9" />
-            </svg>
             Sign In
           </Link>
         </div>
       </div>
+
+      {/* ── History Modal ── */}
+      <ModalOverlay
+        open={historyOpen}
+        onClose={() => setHistoryOpen(false)}
+        title="Practice History"
+        icon={
+          <svg className="w-5 h-5 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        }
+      >
+        {paginatedHistory.length === 0 ? (
+          <p className="text-sm text-muted-foreground text-center py-8">No practice sessions yet.</p>
+        ) : (
+          <ul className="space-y-2">
+            {paginatedHistory.map((item) => (
+              <li key={item.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors">
+                <div>
+                  <p className="text-sm font-medium text-foreground">{item.role}</p>
+                  <p className="text-xs text-muted-foreground">{item.date}</p>
+                </div>
+                <span className="text-sm font-bold text-accent">{item.score}%</span>
+              </li>
+            ))}
+          </ul>
+        )}
+        <PaginationBar current={historyPage} total={historyTotal} onChange={setHistoryPage} />
+      </ModalOverlay>
+
+      {/* ── Notifications Modal ── */}
+      <ModalOverlay
+        open={notifOpen}
+        onClose={() => setNotifOpen(false)}
+        title="Notifications"
+        icon={
+          <svg className="w-5 h-5 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" />
+          </svg>
+        }
+      >
+        {paginatedNotifs.length === 0 ? (
+          <p className="text-sm text-muted-foreground text-center py-8">No notifications yet.</p>
+        ) : (
+          <ul className="space-y-2">
+            {paginatedNotifs.map((item) => (
+              <li key={item.id} className="p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors cursor-pointer">
+                <p className="text-sm font-medium text-foreground">{item.title}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">{item.description}</p>
+              </li>
+            ))}
+          </ul>
+        )}
+        <PaginationBar current={notifPage} total={notifTotal} onChange={setNotifPage} />
+      </ModalOverlay>
 
       {/* ── Mobile slide-in nav panel ── */}
       {mobileOpen && (
@@ -247,6 +463,25 @@ export default function NavBar() {
               >
                 FAQ
               </a>
+              <hr className="my-3 border-border" />
+              <button
+                onClick={() => { setMobileOpen(false); openHistory(); }}
+                className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm font-medium text-foreground hover:bg-muted transition-colors"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                History
+              </button>
+              <button
+                onClick={() => { setMobileOpen(false); openNotif(); }}
+                className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm font-medium text-foreground hover:bg-muted transition-colors"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" />
+                </svg>
+                Notifications
+              </button>
             </div>
 
             {/* Panel footer — Sign In */}
@@ -254,11 +489,8 @@ export default function NavBar() {
               <Link
                 to="/login"
                 onClick={() => setMobileOpen(false)}
-                className="flex items-center justify-center gap-2 w-full px-4 py-2.5 rounded-lg bg-primary text-white font-semibold text-sm transition-all duration-200 hover:bg-primary/90"
+                className="flex items-center justify-center w-full px-4 py-2.5 rounded-lg bg-primary text-white font-semibold text-sm transition-all duration-200 hover:bg-primary/90"
               >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9" />
-                </svg>
                 Sign In / Sign Up
               </Link>
             </div>

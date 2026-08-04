@@ -3,6 +3,7 @@ import NavBar from "./components/NavBar";
 import Dashboard from "./pages/Dashboard";
 import InterviewRoom from "./pages/InterviewRoom";
 import EvaluationReport from "./pages/EvaluationReport";
+import Login from "./pages/Login";
 
 export default function App() {
   return (
@@ -13,6 +14,7 @@ export default function App() {
           <Route path="/" element={<Dashboard />} />
           <Route path="/interview" element={<InterviewRoom />} />
           <Route path="/report" element={<EvaluationReport />} />
+          <Route path="/login" element={<Login />} />
         </Routes>
       </div>
     </BrowserRouter>

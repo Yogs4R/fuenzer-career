@@ -172,7 +172,7 @@ export default function Dashboard() {
             Nail Your Next Interview
           </h1>
           <p className="mt-4 sm:mt-6 text-base sm:text-lg text-white/70 max-w-xl mx-auto leading-relaxed">
-            Research trending skills in your target role, practise with voice interviews, and get AI-powered feedback \u2014 all in one place.
+            Research trending skills in your target role, practise with voice interviews, and get AI-powered feedback — all in one place.
           </p>
           <div className={`mt-8 sm:mt-10 max-w-lg mx-auto transition-all duration-200 ${isLoading ? "pointer-events-none opacity-50" : ""}`}>
             <RoleCombobox value={heroRole} onChange={setHeroRole} onSubmit={handleStart} variant="hero" />
@@ -242,19 +242,9 @@ export default function Dashboard() {
             Three intelligent agents work together to give you an edge.
           </p>
 
-          <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-8 relative">
-            {/* Connecting arrows (desktop) */}
-            <div className="hidden md:flex absolute top-16 left-[calc(16.66%+3rem)] right-[calc(16.66%+3rem)] items-center justify-between pointer-events-none" aria-hidden="true">
-              <svg className="w-8 h-8 text-accent/30" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
-              </svg>
-              <svg className="w-8 h-8 text-accent/30" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
-              </svg>
-            </div>
-
+          <div className="mt-12 grid grid-cols-1 md:grid-cols-5 gap-4 items-start relative">
             {agents.map((agent, i) => (
-              <div key={agent.title} className="relative z-10 flex flex-col items-center text-center">
+              <div key={agent.title} className={`relative z-10 flex flex-col items-center text-center ${i === 0 ? "md:col-start-1" : i === 1 ? "md:col-start-3" : "md:col-start-5"}`}>
                 <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${agent.accent} flex items-center justify-center mb-5 shadow-lg`}>
                   <div className="text-white">{agent.icon}</div>
                 </div>
@@ -265,6 +255,17 @@ export default function Dashboard() {
                 <p className="mt-1.5 text-sm text-muted-foreground max-w-[260px] leading-relaxed">{agent.subtitle}</p>
               </div>
             ))}
+            {/* Desktop connecting arrows — positioned in grid columns 2 & 4 */}
+            <div className="hidden md:flex md:col-start-2 md:col-span-1 justify-center items-center pt-8" aria-hidden="true">
+              <svg className="w-8 h-8 text-accent/30" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+              </svg>
+            </div>
+            <div className="hidden md:flex md:col-start-4 md:col-span-1 justify-center items-center pt-8" aria-hidden="true">
+              <svg className="w-8 h-8 text-accent/30" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+              </svg>
+            </div>
           </div>
         </div>
       </section>
@@ -407,7 +408,7 @@ export default function Dashboard() {
             className="btn-active mt-8 inline-flex items-center gap-2 px-8 py-3.5 rounded-lg bg-accent hover:bg-accent/90 text-white font-semibold text-base shadow-lg cursor-pointer transition-all duration-200 hover:-translate-y-0.5"
           >
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m0 0l-6-6m6 6l6-6" />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 19.5v-15m0 0l-6 6m6-6l6 6" />
             </svg>
             Get Started Now
           </button>
@@ -417,11 +418,11 @@ export default function Dashboard() {
       {/* ========= FOOTER ========= */}
       <footer className="bg-muted border-t border-border">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8">
             <div>
               <h3 className="font-heading text-lg font-semibold text-foreground mb-2">Fuenzer Career</h3>
               <p className="text-sm text-muted-foreground leading-relaxed max-w-[240px]">
-                Nail Your Next Interview practise with voice, get AI feedback, and land the role.
+                Nail Your Next Interview — practise with voice, get AI feedback, and land the role.
               </p>
             </div>
             <div>
@@ -431,6 +432,13 @@ export default function Dashboard() {
                 <li><a href="#how-it-works" className="text-sm text-muted-foreground hover:text-accent transition-colors">How It Works</a></li>
                 <li><a href="#testimonials" className="text-sm text-muted-foreground hover:text-accent transition-colors">Testimonials</a></li>
                 <li><a href="#faq" className="text-sm text-muted-foreground hover:text-accent transition-colors">FAQ</a></li>
+              </ul>
+            </div>
+            <div>
+              <h4 className="font-heading text-sm font-semibold text-foreground mb-3">Updates &amp; History</h4>
+              <ul className="space-y-2">
+                <li><span className="text-sm text-muted-foreground">No notifications yet</span></li>
+                <li><span className="text-sm text-muted-foreground">No practice history</span></li>
               </ul>
             </div>
             <div>

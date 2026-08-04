@@ -1,17 +1,40 @@
 import { useNavigate } from "react-router-dom";
+import { useEffect, useRef, useState } from "react";
 
 const metrics = [
-  { label: "Communication", score: 82, color: "text-blue-500", barColor: "bg-blue-500" },
-  { label: "Clarity", score: 78, color: "text-emerald-500", barColor: "bg-emerald-500" },
-  { label: "Relevance", score: 90, color: "text-purple-500", barColor: "bg-purple-500" },
-  { label: "Completeness", score: 74, color: "text-amber-500", barColor: "bg-amber-500" },
-  { label: "Confidence", score: 85, color: "text-rose-500", barColor: "bg-rose-500" },
+  { label: "Communication", score: 82 },
+  { label: "Clarity", score: 78 },
+  { label: "Relevance", score: 90 },
+  { label: "Completeness", score: 74 },
+  { label: "Confidence", score: 85 },
 ];
 
 const overallScore = 85;
 
 const transcriptSnippet =
-  "\"I was working on a large e-commerce platform where we had severe performance issues during peak traffic. The homepage was taking over eight seconds to load... I identified the main bottleneck was unoptimised images and excessive API calls on initial render. I implemented lazy loading, moved to a CDN for static assets, and debounced the search endpoints. After the changes, load time dropped to under two seconds and bounce rate decreased by 23%.\"";
+  '"I was working on a large e-commerce platform where we had severe performance issues during peak traffic. The homepage was taking over eight seconds to load... I identified the main bottleneck was unoptimised images and excessive API calls on initial render. I implemented lazy loading, moved to a CDN for static assets, and debounced the search endpoints. After the changes, load time dropped to under two seconds and bounce rate decreased by 23%."';
+
+/* ── Animated bar component ── */
+function AnimatedBar({ score, delay }: { score: number; delay: number }) {
+  const [width, setWidth] = useState(0);
+  const ran = useRef(false);
+
+  useEffect(() => {
+    if (ran.current) return;
+    ran.current = true;
+    const timer = setTimeout(() => setWidth(score), delay);
+    return () => clearTimeout(timer);
+  }, [score, delay]);
+
+  return (
+    <div className="w-full h-2.5 bg-muted rounded-full overflow-hidden">
+      <div
+        className="h-full rounded-full bg-accent transition-all duration-1000 ease-out"
+        style={{ width: `${width}%` }}
+      />
+    </div>
+  );
+}
 
 export default function EvaluationReport() {
   const navigate = useNavigate();
@@ -112,14 +135,9 @@ export default function EvaluationReport() {
             >
               <div className="flex items-center justify-between mb-3">
                 <h3 className="font-heading text-sm font-semibold text-foreground">{m.label}</h3>
-                <span className={`text-lg font-bold ${m.color}`}>{m.score}%</span>
+                <span className="text-lg font-bold text-accent">{m.score}%</span>
               </div>
-              <div className="w-full h-2.5 bg-muted rounded-full overflow-hidden">
-                <div
-                  className={`h-full rounded-full ${m.barColor} transition-all duration-700`}
-                  style={{ width: `${m.score}%` }}
-                />
-              </div>
+              <AnimatedBar score={m.score} delay={300 + i * 150} />
               <p className="mt-2 text-xs text-muted-foreground">
                 {m.score >= 85
                   ? "Excellent \u2014 keep it up!"
@@ -146,7 +164,7 @@ export default function EvaluationReport() {
             <div className="bg-muted/30 rounded-lg p-4 max-h-48 overflow-y-auto">
               <p className="text-sm text-foreground leading-relaxed">{transcriptSnippet}</p>
             </div>
-            <p className="mt-2 text-xs text-muted-foreground text-right">Question 1 of 10 \u2014 abridged</p>
+            <p className="mt-2 text-xs text-muted-foreground text-right">Question 1 of 10 &mdash; abridged</p>
           </div>
 
           {/* Recommendation */}
@@ -159,8 +177,8 @@ export default function EvaluationReport() {
             </div>
             <ul className="space-y-3">
               {[
-                { tip: "Add specific metrics to your project stories (e.g., \u201C23% improvement\u201D)", priority: "High" },
-                { tip: "Reduce filler words (\u201Cum\u201D, \u201Cuh\u201D) \u2014 try pausing instead", priority: "Medium" },
+                { tip: "Add specific metrics to your project stories (e.g., \"23% improvement\")", priority: "High" },
+                { tip: "Reduce filler words (\"um\", \"uh\") \u2014 try pausing instead", priority: "Medium" },
                 { tip: "Structure answers with STAR format for complex questions", priority: "Medium" },
                 { tip: "Practise 2\u20133 more mock sessions before the real interview", priority: "Low" },
               ].map((item) => (
