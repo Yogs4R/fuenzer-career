@@ -245,7 +245,7 @@ export default function NavBar() {
         </div>
 
         {/* Desktop nav links — centered between logo and icon controls */}
-        <div className="hidden sm:flex items-center gap-3 lg:gap-5 mr-auto ml-4 lg:ml-8 lg:absolute lg:left-1/2 lg:-translate-x-1/2 lg:m-0">
+        <div className="hidden sm:flex items-center gap-3 lg:gap-5 mx-auto">
           <a
             href="#trending"
             className="text-white/70 hover:text-white transition-colors duration-200 text-xs lg:text-sm whitespace-nowrap"
@@ -273,7 +273,7 @@ export default function NavBar() {
         </div>
 
         {/* Right: icons + controls */}
-        <div className="flex items-center gap-1 sm:gap-2 text-sm font-medium text-white/80 shrink-0 lg:ml-auto">
+        <div className="flex items-center gap-1 sm:gap-2 text-sm font-medium text-white/80 shrink-0">
           {/* History icon */}
           <button
             onClick={openHistory}
