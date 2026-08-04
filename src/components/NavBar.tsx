@@ -22,7 +22,11 @@ const mockHistoryItems = Array.from({ length: 13 }, (_, i) => ({
 const mockNotifications = Array.from({ length: 11 }, (_, i) => ({
   id: i + 1,
   title: ["New role added", "Practice reminder", "Score milestone", "Tip of the day", "New feature", "Leaderboard update", "Challenge available", "Badge earned", "Peer review", "Session saved", "Achievement unlocked"][i % 11],
-  description: `Notification message ${i + 1} — click to view details.`,
+  description:
+    i % 3 === 0
+      ? `Notification message ${i + 1} — click to view the full details of this update. We've added more context so you know exactly what changed and what action, if any, is needed from you.`
+      : `Notification message ${i + 1} — click to view details.`,
+  date: `2025-0${(i % 9) + 1}-${String((i * 2) % 28 + 1).padStart(2, "0")}`,
 }));
 
 /* ── Pagination component ── */
@@ -128,7 +132,7 @@ function ModalOverlay({
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted cursor-pointer transition-colors"
+            className="p-1.5 rounded-md text-foreground hover:bg-muted cursor-pointer transition-colors"
             aria-label="Close"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
@@ -153,6 +157,7 @@ export default function NavBar() {
   const [notifOpen, setNotifOpen] = useState(false);
   const [historyPage, setHistoryPage] = useState(1);
   const [notifPage, setNotifPage] = useState(1);
+  const [expandedNotif, setExpandedNotif] = useState<number | null>(null);
 
   /* ── Paginated data ── */
   const historyTotal = Math.ceil(mockHistoryItems.length / PAGE_SIZE);
@@ -174,6 +179,7 @@ export default function NavBar() {
   };
   const openNotif = () => {
     setNotifPage(1);
+    setExpandedNotif(null);
     setNotifOpen(true);
   };
 
@@ -211,7 +217,7 @@ export default function NavBar() {
 
   return (
     <nav className="bg-primary text-on-primary shadow-md sticky top-0 z-50">
-      <div className="max-w-6xl mx-auto px-3 sm:px-6 lg:px-8 h-14 flex items-center justify-between gap-1 sm:gap-2">
+      <div className="max-w-6xl mx-auto px-3 sm:px-6 lg:px-8 h-14 flex items-center gap-1 sm:gap-2 relative">
         {/* Left: Hamburger + Logo */}
         <div className="flex items-center gap-1 sm:gap-3 shrink-0">
           {/* Hamburger (mobile) */}
@@ -238,8 +244,8 @@ export default function NavBar() {
           </Link>
         </div>
 
-        {/* Desktop nav links (inline, before icon controls) */}
-        <div className="hidden sm:flex items-center gap-3 lg:gap-5 mr-auto ml-4 lg:ml-8">
+        {/* Desktop nav links — centered between logo and icon controls */}
+        <div className="hidden sm:flex items-center gap-3 lg:gap-5 mr-auto ml-4 lg:ml-8 lg:absolute lg:left-1/2 lg:-translate-x-1/2 lg:m-0">
           <a
             href="#trending"
             className="text-white/70 hover:text-white transition-colors duration-200 text-xs lg:text-sm whitespace-nowrap"
@@ -252,10 +258,22 @@ export default function NavBar() {
           >
             How It Works
           </a>
+          <a
+            href="#testimonials"
+            className="text-white/70 hover:text-white transition-colors duration-200 text-xs lg:text-sm whitespace-nowrap"
+          >
+            Testimonials
+          </a>
+          <a
+            href="#faq"
+            className="text-white/70 hover:text-white transition-colors duration-200 text-xs lg:text-sm whitespace-nowrap"
+          >
+            FAQ
+          </a>
         </div>
 
         {/* Right: icons + controls */}
-        <div className="flex items-center gap-1 sm:gap-2 text-sm font-medium text-white/80 shrink-0">
+        <div className="flex items-center gap-1 sm:gap-2 text-sm font-medium text-white/80 shrink-0 lg:ml-auto">
           {/* History icon */}
           <button
             onClick={openHistory}
@@ -282,7 +300,7 @@ export default function NavBar() {
           </button>
 
           {/* Language dropdown */}
-          <div ref={langRef} className="relative">
+          <div ref={langRef} className="relative hidden md:block">
             <button
               onClick={() => setLangOpen((p) => !p)}
               className="flex items-center gap-1 px-2 py-1.5 rounded-md border border-white/20 text-xs font-semibold cursor-pointer transition-all duration-200 hover:border-white/40 hover:bg-white/10"
@@ -338,12 +356,20 @@ export default function NavBar() {
             )}
           </div>
 
-          {/* Sign In (clean — no icon) */}
+          {/* Sign In — ghost/outline */}
           <Link
             to="/login"
-            className="hidden sm:inline-flex items-center px-3.5 py-1.5 rounded-md bg-white/15 hover:bg-white/25 text-white font-semibold text-xs cursor-pointer transition-all duration-200 hover:-translate-y-0.5"
+            className="hidden sm:inline-flex items-center px-4 py-1.5 rounded-md border border-white/30 text-white/80 hover:bg-white/10 hover:text-white font-semibold text-sm cursor-pointer transition-all duration-200"
           >
             Sign In
+          </Link>
+
+          {/* Sign Up — solid accent */}
+          <Link
+            to="/signup"
+            className="hidden md:inline-flex items-center px-4 py-1.5 rounded-md bg-accent hover:bg-accent/90 text-white font-semibold text-sm cursor-pointer transition-all duration-200 hover:-translate-y-0.5 shadow-sm"
+          >
+            Sign Up
           </Link>
         </div>
       </div>
@@ -392,12 +418,39 @@ export default function NavBar() {
           <p className="text-sm text-muted-foreground text-center py-8">No notifications yet.</p>
         ) : (
           <ul className="space-y-2">
-            {paginatedNotifs.map((item) => (
-              <li key={item.id} className="p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors cursor-pointer">
-                <p className="text-sm font-medium text-foreground">{item.title}</p>
-                <p className="text-xs text-muted-foreground mt-0.5">{item.description}</p>
-              </li>
-            ))}
+            {paginatedNotifs.map((item) => {
+              const isExpanded = expandedNotif === item.id;
+              return (
+                <li
+                  key={item.id}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => setExpandedNotif(isExpanded ? null : item.id)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      setExpandedNotif(isExpanded ? null : item.id);
+                    }
+                  }}
+                  className="p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors cursor-pointer"
+                  aria-expanded={isExpanded}
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-sm font-medium text-foreground">{item.title}</p>
+                    <span className="text-xs text-muted-foreground shrink-0">{item.date}</span>
+                  </div>
+                  <p className={`text-sm text-muted-foreground mt-1 transition-all duration-200 ${isExpanded ? "" : "line-clamp-2"}`}>
+                    {item.description}
+                  </p>
+                  <p className="text-xs font-medium text-accent mt-1.5 flex items-center gap-1">
+                    {isExpanded ? "Show less" : "Show more"}
+                    <svg className={`w-3 h-3 transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </p>
+                </li>
+              );
+            })}
           </ul>
         )}
         <PaginationBar current={notifPage} total={notifTotal} onChange={setNotifPage} />
@@ -484,14 +537,21 @@ export default function NavBar() {
               </button>
             </div>
 
-            {/* Panel footer — Sign In */}
-            <div className="px-3 py-4 border-t border-border">
+            {/* Panel footer — Sign In + Sign Up */}
+            <div className="px-3 py-4 border-t border-border space-y-2">
               <Link
                 to="/login"
                 onClick={() => setMobileOpen(false)}
                 className="flex items-center justify-center w-full px-4 py-2.5 rounded-lg bg-primary text-white font-semibold text-sm transition-all duration-200 hover:bg-primary/90"
               >
-                Sign In / Sign Up
+                Sign In
+              </Link>
+              <Link
+                to="/signup"
+                onClick={() => setMobileOpen(false)}
+                className="flex items-center justify-center w-full px-4 py-2.5 rounded-lg bg-accent text-white font-semibold text-sm transition-all duration-200 hover:bg-accent/90"
+              >
+                Sign Up
               </Link>
             </div>
           </div>

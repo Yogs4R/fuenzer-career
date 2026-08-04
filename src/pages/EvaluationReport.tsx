@@ -11,8 +11,18 @@ const metrics = [
 
 const overallScore = 85;
 
-const transcriptSnippet =
-  '"I was working on a large e-commerce platform where we had severe performance issues during peak traffic. The homepage was taking over eight seconds to load... I identified the main bottleneck was unoptimised images and excessive API calls on initial render. I implemented lazy loading, moved to a CDN for static assets, and debounced the search endpoints. After the changes, load time dropped to under two seconds and bounce rate decreased by 23%."';
+const mockTranscripts = [
+  '"I was working on a large e-commerce platform where we had severe performance issues during peak traffic. The homepage was taking over eight seconds to load... I identified the main bottleneck was unoptimised images and excessive API calls on initial render. I implemented lazy loading, moved to a CDN for static assets, and debounced the search endpoints. After the changes, load time dropped to under two seconds and bounce rate decreased by 23%."',
+  '"During my time at Company X, we had a critical deadline for a client launch. I coordinated with design, QA, and backend teams to break the work into sprints... I prioritised the must-haves and we shipped on time with zero critical bugs."',
+  '"I collaborated with a cross-functional team on a mobile app release. My role was bridging the gap between design and engineering... I set up weekly syncs and a shared component library which cut integration time by 40%."',
+  '"A senior engineer once pointed out my code reviews were too vague. Instead of defending myself, I asked for examples and started using the Socratic review style... My review acceptance rate improved and the team adopted the style."',
+  '"I spent two days on a memory leak I could not reproduce. I wrote a small profiler script to capture heap snapshots over time... eventually I found the leak in a cached event listener and fixed it within an hour."',
+  '"I noticed our support team kept answering the same questions, so I took the initiative to build an internal FAQ bot... It now deflects 60% of repetitive tickets, saving roughly five hours per week."',
+  '"I explained a complex microservices migration to non-technical stakeholders using a simple train-and-station analogy... The leadership team approved the plan within the same week."',
+  '"A teammate and I disagreed on the database schema design. We ran a quick benchmark comparing both approaches with real data... The data proved one option 2x faster, so we went with it and moved on."',
+  '"The project I am most proud of is rebuilding our analytics dashboard. I led the redesign from data model to UI... Monthly active users on the dashboard grew by 45% and support questions about metrics dropped significantly."',
+  '"If I started my current role again, I would ask more questions earlier. In the first month I assumed too much and reworked a feature twice... Now I always confirm requirements with a written one-liner before starting."',
+];
 
 /* ── Animated bar component ── */
 function AnimatedBar({ score, delay }: { score: number; delay: number }) {
@@ -27,7 +37,7 @@ function AnimatedBar({ score, delay }: { score: number; delay: number }) {
   }, [score, delay]);
 
   return (
-    <div className="w-full h-2.5 bg-muted rounded-full overflow-hidden">
+    <div className="w-full h-2.5 bg-accent/10 rounded-full overflow-hidden">
       <div
         className="h-full rounded-full bg-accent transition-all duration-1000 ease-out"
         style={{ width: `${width}%` }}
@@ -38,6 +48,7 @@ function AnimatedBar({ score, delay }: { score: number; delay: number }) {
 
 export default function EvaluationReport() {
   const navigate = useNavigate();
+  const [question, setQuestion] = useState(0);
 
   const handleTryAgain = () => {
     navigate("/");
@@ -162,9 +173,50 @@ export default function EvaluationReport() {
               <h2 className="font-heading text-lg font-semibold text-foreground">Transcript</h2>
             </div>
             <div className="bg-muted/30 rounded-lg p-4 max-h-48 overflow-y-auto">
-              <p className="text-sm text-foreground leading-relaxed">{transcriptSnippet}</p>
+              <p className="text-sm text-foreground leading-relaxed">{mockTranscripts[question]}</p>
             </div>
-            <p className="mt-2 text-xs text-muted-foreground text-right">Question 1 of 10 &mdash; abridged</p>
+            {/* Question pagination — numbered tabs + prev/next */}
+            <div className="mt-3 flex items-center justify-between gap-2">
+              <button
+                onClick={() => setQuestion((q) => Math.max(0, q - 1))}
+                disabled={question === 0}
+                className="px-2.5 py-1.5 rounded-md text-xs font-medium border border-border text-muted-foreground hover:text-foreground hover:bg-muted disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-colors"
+                aria-label="Previous question"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
+              <div className="flex items-center gap-1 overflow-x-auto scrollbar-none">
+                {mockTranscripts.map((_, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setQuestion(i)}
+                    className={`w-7 h-7 rounded-md text-xs font-medium cursor-pointer transition-colors ${
+                      i === question
+                        ? "bg-accent text-white"
+                        : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                    }`}
+                    aria-label={`Question ${i + 1}`}
+                  >
+                    {i + 1}
+                  </button>
+                ))}
+              </div>
+              <button
+                onClick={() => setQuestion((q) => Math.min(mockTranscripts.length - 1, q + 1))}
+                disabled={question === mockTranscripts.length - 1}
+                className="px-2.5 py-1.5 rounded-md text-xs font-medium border border-border text-muted-foreground hover:text-foreground hover:bg-muted disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-colors"
+                aria-label="Next question"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+            </div>
+            <p className="mt-2 text-xs text-muted-foreground text-right">
+              Question {question + 1} of {mockTranscripts.length} &mdash; abridged
+            </p>
           </div>
 
           {/* Recommendation */}

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import RoleCombobox from "../components/RoleCombobox";
 
 const trendingSkills = [
@@ -242,7 +242,7 @@ export default function Dashboard() {
             Three intelligent agents work together to give you an edge.
           </p>
 
-          <div className="mt-12 grid grid-cols-1 md:grid-cols-5 gap-4 items-start relative">
+          <div className="mt-12 grid grid-cols-1 md:grid-cols-5 gap-4 items-center relative">
             {agents.map((agent, i) => (
               <div key={agent.title} className={`relative z-10 flex flex-col items-center text-center ${i === 0 ? "md:col-start-1" : i === 1 ? "md:col-start-3" : "md:col-start-5"}`}>
                 <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${agent.accent} flex items-center justify-center mb-5 shadow-lg`}>
@@ -255,13 +255,13 @@ export default function Dashboard() {
                 <p className="mt-1.5 text-sm text-muted-foreground max-w-[260px] leading-relaxed">{agent.subtitle}</p>
               </div>
             ))}
-            {/* Desktop connecting arrows — positioned in grid columns 2 & 4 */}
-            <div className="hidden md:flex md:col-start-2 md:col-span-1 justify-center items-center pt-8" aria-hidden="true">
+            {/* Desktop connecting arrows — vertically centered with the agent cards */}
+            <div className="hidden md:flex md:col-start-2 md:col-span-1 justify-center items-center self-center" aria-hidden="true">
               <svg className="w-8 h-8 text-accent/30" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
               </svg>
             </div>
-            <div className="hidden md:flex md:col-start-4 md:col-span-1 justify-center items-center pt-8" aria-hidden="true">
+            <div className="hidden md:flex md:col-start-4 md:col-span-1 justify-center items-center self-center" aria-hidden="true">
               <svg className="w-8 h-8 text-accent/30" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
               </svg>
@@ -435,10 +435,18 @@ export default function Dashboard() {
               </ul>
             </div>
             <div>
-              <h4 className="font-heading text-sm font-semibold text-foreground mb-3">Updates &amp; History</h4>
+              <h4 className="font-heading text-sm font-semibold text-foreground mb-3">Legal</h4>
               <ul className="space-y-2">
-                <li><span className="text-sm text-muted-foreground">No notifications yet</span></li>
-                <li><span className="text-sm text-muted-foreground">No practice history</span></li>
+                <li>
+                  <Link to="/privacy" className="text-sm text-muted-foreground hover:text-accent transition-colors">
+                    Privacy Policy
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/terms" className="text-sm text-muted-foreground hover:text-accent transition-colors">
+                    Terms of Service
+                  </Link>
+                </li>
               </ul>
             </div>
             <div>

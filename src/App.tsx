@@ -4,6 +4,9 @@ import Dashboard from "./pages/Dashboard";
 import InterviewRoom from "./pages/InterviewRoom";
 import EvaluationReport from "./pages/EvaluationReport";
 import Login from "./pages/Login";
+import SignUp from "./pages/SignUp";
+import Privacy from "./pages/Privacy";
+import Terms from "./pages/Terms";
 
 export default function App() {
   return (
@@ -15,6 +18,9 @@ export default function App() {
           <Route path="/interview" element={<InterviewRoom />} />
           <Route path="/report" element={<EvaluationReport />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<SignUp />} />
+          <Route path="/privacy" element={<Privacy />} />
+          <Route path="/terms" element={<Terms />} />
         </Routes>
       </div>
     </BrowserRouter>

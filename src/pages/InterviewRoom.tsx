@@ -326,6 +326,13 @@ export default function InterviewRoom() {
                     </div>
                   ))}
                 </div>
+
+                {/* Mock Interviewer Agent suggestion */}
+                <div className="bg-accent/5 border border-accent/20 rounded-lg p-3 mt-3">
+                  <p className="text-xs sm:text-sm text-foreground leading-relaxed">
+                    💡 Interviewer Agent Suggestion: For this question about an optimisation project, try framing your answer around a specific performance metric. For example: &quot;I reduced page load time from 8s to 2s by implementing lazy loading and image compression.&quot;
+                  </p>
+                </div>
               </div>
             </div>
           </div>
