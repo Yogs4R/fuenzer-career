@@ -88,9 +88,61 @@ html {
   animation: scaleIn 0.5s ease-out both;
 }
 
+/* ── Nav slide-in animation ── */
+@keyframes slideInNav {
+  from {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideOutNav {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+}
+
+.animate-slide-in-nav {
+  animation: slideInNav 0.3s ease-out forwards;
+}
+
+.animate-slide-out-nav {
+  animation: slideOutNav 0.2s ease-in forwards;
+}
+
+/* ── Auto-scroll carousel ── */
+@keyframes scrollCarousel {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-carousel {
+  animation: scrollCarousel 40s linear infinite;
+}
+
+.animate-carousel-paused {
+  animation-play-state: paused;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .animate-fade-in-up,
-  .animate-scale-in {
+  .animate-scale-in,
+  .animate-slide-in-nav,
+  .animate-slide-out-nav,
+  .animate-carousel {
     animation: none;
     opacity: 1;
     transform: none;
