@@ -421,12 +421,12 @@ export default function Dashboard() {
             <div>
               <h3 className="font-heading text-lg font-semibold text-foreground mb-2">Fuenzer Career</h3>
               <p className="text-sm text-muted-foreground leading-relaxed max-w-[240px]">
-                Nail Your Next Interview \u2014 practise with voice, get AI feedback, and land the role.
+                Nail Your Next Interview practise with voice, get AI feedback, and land the role.
               </p>
             </div>
             <div>
               <h4 className="font-heading text-sm font-semibold text-foreground mb-3">Quick Links</h4>
-              <ul className="space-y-2">m
+              <ul className="space-y-2">
                 <li><a href="#trending" className="text-sm text-muted-foreground hover:text-accent transition-colors">Trending Skills</a></li>
                 <li><a href="#how-it-works" className="text-sm text-muted-foreground hover:text-accent transition-colors">How It Works</a></li>
                 <li><a href="#testimonials" className="text-sm text-muted-foreground hover:text-accent transition-colors">Testimonials</a></li>
