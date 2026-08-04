@@ -1,13 +1,19 @@
-export function handleSectionLink(e: React.MouseEvent<HTMLAnchorElement>, id: string) {
+import type { NavigateFunction } from "react-router-dom";
+
+export function handleSectionLink(
+  e: React.MouseEvent<HTMLAnchorElement>,
+  id: string,
+  navigate?: NavigateFunction,
+) {
+  e.preventDefault();
   if (window.location.pathname === "/") {
-    e.preventDefault();
     const el = document.getElementById(id);
     if (el) {
       el.scrollIntoView({ behavior: "smooth" });
     }
+  } else if (navigate) {
+    navigate("/#" + id);
   } else {
-    // Explicitly redirect to /#id so the Dashboard's hash effect scrolls into view
-    e.preventDefault();
     window.location.href = "/#" + id;
   }
 }

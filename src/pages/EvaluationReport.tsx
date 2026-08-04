@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 
 const metrics = [
   { label: "Communication", score: 82 },
@@ -26,21 +26,18 @@ const mockTranscripts = [
 
 /* ── Animated bar component ── */
 function AnimatedBar({ score, delay }: { score: number; delay: number }) {
-  const [width, setWidth] = useState(0);
-  const ran = useRef(false);
+  const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    if (ran.current) return;
-    ran.current = true;
-    const timer = setTimeout(() => setWidth(score), delay);
+    const timer = setTimeout(() => setVisible(true), delay);
     return () => clearTimeout(timer);
-  }, [score, delay]);
+  }, [delay]);
 
   return (
     <div className="w-full h-2.5 bg-gray-200 rounded-full overflow-hidden">
       <div
-        className="h-full rounded-full bg-accent transition-all duration-1000 ease-out"
-        style={{ width: `${width}%` }}
+        className="h-full rounded-full bg-primary transition-all duration-1000 ease-out"
+        style={{ width: visible ? `${score}%` : "0%" }}
       />
     </div>
   );

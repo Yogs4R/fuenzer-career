@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useMemo } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { handleSectionLink } from "../lib/sectionLink";
 
 const languages = [
@@ -57,10 +57,10 @@ function PaginationBar({
         <button
           key={i}
           onClick={() => onChange(i + 1)}
-          className={`w-7 h-7 rounded-md text-xs font-medium cursor-pointer transition-colors ${
+          className={`w-7 h-7 rounded-md text-xs font-medium cursor-pointer transition-colors border ${
             i + 1 === current
-              ? "bg-accent text-white"
-              : "bg-muted text-muted-foreground hover:text-foreground hover:bg-muted/70"
+              ? "bg-accent text-white border-accent"
+              : "bg-white text-foreground border-border/70 hover:bg-muted hover:border-border"
           }`}
           aria-label={`Page ${i + 1}`}
         >
@@ -148,6 +148,7 @@ function ModalOverlay({
 }
 
 export default function NavBar() {
+  const navigate = useNavigate();
   const [lang, setLang] = useState("EN");
   const [langOpen, setLangOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -218,9 +219,9 @@ export default function NavBar() {
 
   return (
     <nav className="bg-primary text-on-primary shadow-md sticky top-0 z-50">
-      <div className="max-w-6xl mx-auto px-3 sm:px-6 lg:px-8 h-14 flex items-center gap-1 sm:gap-2 justify-between relative">
+      <div className="w-full px-2 sm:px-4 lg:px-6 h-14 flex items-center gap-1 sm:gap-2 relative">
         {/* Left: Hamburger + Logo */}
-        <div className="flex items-center gap-1 sm:gap-3 shrink-0">
+        <div className="flex items-center gap-1 sm:gap-3">
           {/* Hamburger (mobile) */}
           <button
             onClick={() => setMobileOpen((p) => !p)}
@@ -245,42 +246,40 @@ export default function NavBar() {
           </Link>
         </div>
 
-        {/* Desktop nav links — centered between logo and icon controls via equal flex spacers */}
-        <div className="hidden sm:block flex-1" aria-hidden="true" />
-        <div className="hidden sm:flex items-center gap-3 lg:gap-5">
+        {/* Desktop nav links — centered in the available space */}
+        <div className="hidden sm:flex flex-1 items-center justify-center gap-3 lg:gap-5">
           <a
             href="/#trending"
-            onClick={(e) => handleSectionLink(e, "trending")}
-            className="text-white/70 hover:text-white transition-colors duration-200 text-xs lg:text-sm whitespace-nowrap"
+            onClick={(e) => handleSectionLink(e, "trending", navigate)}
+            className="text-white/70 hover:text-white transition-colors duration-200 text-xs lg:text-sm whitespace-nowrap cursor-pointer"
           >
             Trending
           </a>
           <a
             href="/#how-it-works"
-            onClick={(e) => handleSectionLink(e, "how-it-works")}
-            className="text-white/70 hover:text-white transition-colors duration-200 text-xs lg:text-sm whitespace-nowrap"
+            onClick={(e) => handleSectionLink(e, "how-it-works", navigate)}
+            className="text-white/70 hover:text-white transition-colors duration-200 text-xs lg:text-sm whitespace-nowrap cursor-pointer"
           >
             How It Works
           </a>
           <a
             href="/#testimonials"
-            onClick={(e) => handleSectionLink(e, "testimonials")}
-            className="text-white/70 hover:text-white transition-colors duration-200 text-xs lg:text-sm whitespace-nowrap"
+            onClick={(e) => handleSectionLink(e, "testimonials", navigate)}
+            className="text-white/70 hover:text-white transition-colors duration-200 text-xs lg:text-sm whitespace-nowrap cursor-pointer"
           >
             Testimonials
           </a>
           <a
             href="/#faq"
-            onClick={(e) => handleSectionLink(e, "faq")}
-            className="text-white/70 hover:text-white transition-colors duration-200 text-xs lg:text-sm whitespace-nowrap"
+            onClick={(e) => handleSectionLink(e, "faq", navigate)}
+            className="text-white/70 hover:text-white transition-colors duration-200 text-xs lg:text-sm whitespace-nowrap cursor-pointer"
           >
             FAQ
           </a>
         </div>
-        <div className="hidden sm:block flex-1" aria-hidden="true" />
 
         {/* Right: icons + controls */}
-        <div className="flex items-center gap-1 sm:gap-2 text-sm font-medium text-white/80 shrink-0">
+        <div className="flex items-center gap-1 sm:gap-2 text-sm font-medium text-white/80">
           {/* History icon */}
           <button
             onClick={openHistory}
@@ -366,7 +365,7 @@ export default function NavBar() {
           {/* Sign In — ghost/outline */}
           <Link
             to="/login"
-            className="hidden sm:inline-flex items-center px-4 py-1.5 rounded-md border border-white/30 text-white/80 hover:bg-white/10 hover:text-white font-semibold text-sm cursor-pointer transition-all duration-200"
+            className="inline-flex items-center px-2 sm:px-4 py-1 sm:py-1.5 rounded-md border border-white/30 text-white/80 hover:bg-white/10 hover:text-white font-semibold text-xs sm:text-sm cursor-pointer transition-all duration-200"
           >
             Sign In
           </Link>
@@ -374,7 +373,7 @@ export default function NavBar() {
           {/* Sign Up — solid accent */}
           <Link
             to="/signup"
-            className="hidden md:inline-flex items-center px-4 py-1.5 rounded-md bg-accent hover:bg-accent/90 text-white font-semibold text-sm cursor-pointer transition-all duration-200 hover:-translate-y-0.5 shadow-sm"
+            className="inline-flex items-center px-2 sm:px-4 py-1 sm:py-1.5 rounded-md bg-accent hover:bg-accent/90 text-white font-semibold text-xs sm:text-sm cursor-pointer transition-all duration-200 hover:-translate-y-0.5 shadow-sm"
           >
             Sign Up
           </Link>
@@ -497,28 +496,28 @@ export default function NavBar() {
             <div className="flex-1 px-3 py-4 space-y-1">
               <a
                 href="/#trending"
-                onClick={(e) => { handleSectionLink(e, "trending"); setMobileOpen(false); }}
+                onClick={(e) => { handleSectionLink(e, "trending", navigate); setMobileOpen(false); }}
                 className="block px-3 py-2.5 rounded-lg text-sm font-medium text-foreground hover:bg-muted transition-colors"
               >
                 Trending Skills
               </a>
               <a
                 href="/#how-it-works"
-                onClick={(e) => { handleSectionLink(e, "how-it-works"); setMobileOpen(false); }}
+                onClick={(e) => { handleSectionLink(e, "how-it-works", navigate); setMobileOpen(false); }}
                 className="block px-3 py-2.5 rounded-lg text-sm font-medium text-foreground hover:bg-muted transition-colors"
               >
                 How It Works
               </a>
               <a
                 href="/#testimonials"
-                onClick={(e) => { handleSectionLink(e, "testimonials"); setMobileOpen(false); }}
+                onClick={(e) => { handleSectionLink(e, "testimonials", navigate); setMobileOpen(false); }}
                 className="block px-3 py-2.5 rounded-lg text-sm font-medium text-foreground hover:bg-muted transition-colors"
               >
                 Testimonials
               </a>
               <a
                 href="/#faq"
-                onClick={(e) => { handleSectionLink(e, "faq"); setMobileOpen(false); }}
+                onClick={(e) => { handleSectionLink(e, "faq", navigate); setMobileOpen(false); }}
                 className="block px-3 py-2.5 rounded-lg text-sm font-medium text-foreground hover:bg-muted transition-colors"
               >
                 FAQ

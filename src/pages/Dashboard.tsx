@@ -431,10 +431,10 @@ export default function Dashboard() {
             <div>
               <h4 className="font-heading text-sm font-semibold text-foreground mb-3">Quick Links</h4>
               <ul className="space-y-2">
-                <li><a href="/#trending" onClick={(e) => handleSectionLink(e, "trending")} className="text-sm text-muted-foreground hover:text-accent transition-colors">Trending Skills</a></li>
-                <li><a href="/#how-it-works" onClick={(e) => handleSectionLink(e, "how-it-works")} className="text-sm text-muted-foreground hover:text-accent transition-colors">How It Works</a></li>
-                <li><a href="/#testimonials" onClick={(e) => handleSectionLink(e, "testimonials")} className="text-sm text-muted-foreground hover:text-accent transition-colors">Testimonials</a></li>
-                <li><a href="/#faq" onClick={(e) => handleSectionLink(e, "faq")} className="text-sm text-muted-foreground hover:text-accent transition-colors">FAQ</a></li>
+                <li><a href="/#trending" onClick={(e) => handleSectionLink(e, "trending", navigate)} className="text-sm text-muted-foreground hover:text-accent transition-colors">Trending Skills</a></li>
+                <li><a href="/#how-it-works" onClick={(e) => handleSectionLink(e, "how-it-works", navigate)} className="text-sm text-muted-foreground hover:text-accent transition-colors">How It Works</a></li>
+                <li><a href="/#testimonials" onClick={(e) => handleSectionLink(e, "testimonials", navigate)} className="text-sm text-muted-foreground hover:text-accent transition-colors">Testimonials</a></li>
+                <li><a href="/#faq" onClick={(e) => handleSectionLink(e, "faq", navigate)} className="text-sm text-muted-foreground hover:text-accent transition-colors">FAQ</a></li>
               </ul>
             </div>
             <div>
