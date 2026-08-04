@@ -1,6 +1,7 @@
-import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, Link, useLocation } from "react-router-dom";
 import RoleCombobox from "../components/RoleCombobox";
+import { handleSectionLink } from "../lib/sectionLink";
 
 const trendingSkills = [
   { name: "React", growth: "+24%" },
@@ -28,7 +29,7 @@ const trendingSkills = [
 const faqItems = [
   {
     question: "Is this free?",
-    answer: "Yes! Phase 1 is completely free. No account or credit card needed \u2014 just type a role and start practising.",
+    answer: "Yes! Phase 1 is completely free. No account or credit card needed — just type a role and start practising.",
   },
   {
     question: "Do I need a microphone?",
@@ -36,7 +37,7 @@ const faqItems = [
   },
   {
     question: "How does the AI feedback work?",
-    answer: "Our AI analyses your speech patterns, filler word usage, and how well your answers match the target role\u2019s required skills.",
+    answer: "Our AI analyses your speech patterns, filler word usage, and how well your answers match the target role’s required skills.",
   },
   {
     question: "Can I save my progress?",
@@ -117,11 +118,23 @@ const agents = [
 
 export default function Dashboard() {
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [heroRole, setHeroRole] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const [testimonialIndex, setTestimonialIndex] = useState(0);
+
+  /* Scroll to hash target after navigation (handles /#trending etc. from other routes) */
+  useEffect(() => {
+    if (!location.hash) return;
+    const id = location.hash.slice(1);
+    const el = document.getElementById(id);
+    if (el) {
+      const t = setTimeout(() => el.scrollIntoView({ behavior: "smooth" }), 80);
+      return () => clearTimeout(t);
+    }
+  }, [location.hash]);
 
   const handleStart = () => {
     if (isLoading) return;
@@ -159,7 +172,7 @@ export default function Dashboard() {
             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
           </svg>
           <p className="font-heading text-lg font-semibold text-foreground mt-6">
-            Agent is fetching live market data and preparing questions\u2026
+            Agent is fetching live market data and preparing questions…
           </p>
           <p className="text-sm text-muted-foreground mt-2">This will only take a moment.</p>
         </div>
@@ -180,8 +193,8 @@ export default function Dashboard() {
         </div>
       </section>
 
-      {/* ========= TRENDING SKILLS \u2014 Auto-scroll Carousel ========= */}
-      <section id="trending" className="py-12 sm:py-16 overflow-hidden">
+      {/* ========= TRENDING SKILLS — Auto-scroll Carousel ========= */}
+      <section id="trending" className="py-12 sm:py-16 overflow-hidden scroll-mt-16">
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
           <div className="flex items-center gap-2 mb-2">
             <svg className="w-5 h-5 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -233,7 +246,7 @@ export default function Dashboard() {
       </section>
 
       {/* ========= AGENT WORKFLOW SECTION ========= */}
-      <section id="how-it-works" className="bg-muted/50 py-16 sm:py-20">
+      <section id="how-it-works" className="bg-muted/50 py-16 sm:py-20 scroll-mt-16">
         <div className="max-w-5xl mx-auto px-4 sm:px-6">
           <h2 className="font-heading text-2xl sm:text-3xl font-bold text-center text-foreground">
             How It Works
@@ -256,12 +269,12 @@ export default function Dashboard() {
               </div>
             ))}
             {/* Desktop connecting arrows — vertically centered with the agent cards */}
-            <div className="hidden md:flex md:col-start-2 md:col-span-1 justify-center items-center self-center" aria-hidden="true">
+            <div className="hidden md:flex md:col-start-2 md:col-span-1 justify-center items-center self-stretch" aria-hidden="true">
               <svg className="w-8 h-8 text-accent/30" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
               </svg>
             </div>
-            <div className="hidden md:flex md:col-start-4 md:col-span-1 justify-center items-center self-center" aria-hidden="true">
+            <div className="hidden md:flex md:col-start-4 md:col-span-1 justify-center items-center self-stretch" aria-hidden="true">
               <svg className="w-8 h-8 text-accent/30" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
               </svg>
@@ -315,8 +328,8 @@ export default function Dashboard() {
         </div>
       </section>
 
-      {/* ========= WHAT USERS SAY \u2014 Carousel ========= */}
-      <section id="testimonials" className="bg-muted/50 py-16 sm:py-20">
+      {/* ========= WHAT USERS SAY — Carousel ========= */}
+      <section id="testimonials" className="bg-muted/50 py-16 sm:py-20 scroll-mt-16">
         <div className="max-w-5xl mx-auto px-4 sm:px-6">
           <h2 className="font-heading text-2xl sm:text-3xl font-bold text-center text-foreground">What Users Say</h2>
           <p className="mt-2 text-muted-foreground text-center max-w-md mx-auto">Hear from people who have used Fuenzer Career.</p>
@@ -364,7 +377,7 @@ export default function Dashboard() {
       </section>
 
       {/* ========= FAQ SECTION ========= */}
-      <section id="faq" className="max-w-2xl mx-auto px-4 sm:px-6 py-16 sm:py-20">
+      <section id="faq" className="max-w-2xl mx-auto px-4 sm:px-6 py-16 sm:py-20 scroll-mt-16">
         <h2 className="font-heading text-2xl sm:text-3xl font-bold text-center text-foreground">Frequently Asked Questions</h2>
         <p className="mt-2 text-muted-foreground text-center max-w-md mx-auto mb-12">Everything you need to know before getting started.</p>
         <div className="space-y-3">
@@ -428,10 +441,10 @@ export default function Dashboard() {
             <div>
               <h4 className="font-heading text-sm font-semibold text-foreground mb-3">Quick Links</h4>
               <ul className="space-y-2">
-                <li><a href="#trending" className="text-sm text-muted-foreground hover:text-accent transition-colors">Trending Skills</a></li>
-                <li><a href="#how-it-works" className="text-sm text-muted-foreground hover:text-accent transition-colors">How It Works</a></li>
-                <li><a href="#testimonials" className="text-sm text-muted-foreground hover:text-accent transition-colors">Testimonials</a></li>
-                <li><a href="#faq" className="text-sm text-muted-foreground hover:text-accent transition-colors">FAQ</a></li>
+                <li><a href="/#trending" onClick={(e) => handleSectionLink(e, "trending")} className="text-sm text-muted-foreground hover:text-accent transition-colors">Trending Skills</a></li>
+                <li><a href="/#how-it-works" onClick={(e) => handleSectionLink(e, "how-it-works")} className="text-sm text-muted-foreground hover:text-accent transition-colors">How It Works</a></li>
+                <li><a href="/#testimonials" onClick={(e) => handleSectionLink(e, "testimonials")} className="text-sm text-muted-foreground hover:text-accent transition-colors">Testimonials</a></li>
+                <li><a href="/#faq" onClick={(e) => handleSectionLink(e, "faq")} className="text-sm text-muted-foreground hover:text-accent transition-colors">FAQ</a></li>
               </ul>
             </div>
             <div>

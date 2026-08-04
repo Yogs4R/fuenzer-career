@@ -15,10 +15,10 @@ const mockQuestions = [
 ];
 
 const starHints = [
-  { label: "Situation", text: "Describe the context \u2014 the project, team, and what made it complex." },
+  { label: "Situation", text: "Describe the context — the project, team, and what made it complex." },
   { label: "Task", text: "Explain your specific responsibility and what needed to be achieved." },
-  { label: "Action", text: "Walk through the steps you took \u2014 tools, techniques, decisions." },
-  { label: "Result", text: "Share the measurable outcome \u2014 faster load times, happier users, etc." },
+  { label: "Action", text: "Walk through the steps you took — tools, techniques, decisions." },
+  { label: "Result", text: "Share the measurable outcome — faster load times, happier users, etc." },
 ];
 
 type MicState = "idle" | "recording" | "processing";

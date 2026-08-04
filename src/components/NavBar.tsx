@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useMemo } from "react";
 import { Link } from "react-router-dom";
+import { handleSectionLink } from "../lib/sectionLink";
 
 const languages = [
   { code: "EN", label: "English" },
@@ -217,7 +218,7 @@ export default function NavBar() {
 
   return (
     <nav className="bg-primary text-on-primary shadow-md sticky top-0 z-50">
-      <div className="max-w-6xl mx-auto px-3 sm:px-6 lg:px-8 h-14 flex items-center gap-1 sm:gap-2 relative">
+      <div className="max-w-6xl mx-auto px-3 sm:px-6 lg:px-8 h-14 flex items-center gap-1 sm:gap-2 justify-between relative">
         {/* Left: Hamburger + Logo */}
         <div className="flex items-center gap-1 sm:gap-3 shrink-0">
           {/* Hamburger (mobile) */}
@@ -244,33 +245,39 @@ export default function NavBar() {
           </Link>
         </div>
 
-        {/* Desktop nav links — centered between logo and icon controls */}
-        <div className="hidden sm:flex items-center gap-3 lg:gap-5 mx-auto">
+        {/* Desktop nav links — centered between logo and icon controls via equal flex spacers */}
+        <div className="hidden sm:block flex-1" aria-hidden="true" />
+        <div className="hidden sm:flex items-center gap-3 lg:gap-5">
           <a
-            href="#trending"
+            href="/#trending"
+            onClick={(e) => handleSectionLink(e, "trending")}
             className="text-white/70 hover:text-white transition-colors duration-200 text-xs lg:text-sm whitespace-nowrap"
           >
             Trending
           </a>
           <a
-            href="#how-it-works"
+            href="/#how-it-works"
+            onClick={(e) => handleSectionLink(e, "how-it-works")}
             className="text-white/70 hover:text-white transition-colors duration-200 text-xs lg:text-sm whitespace-nowrap"
           >
             How It Works
           </a>
           <a
-            href="#testimonials"
+            href="/#testimonials"
+            onClick={(e) => handleSectionLink(e, "testimonials")}
             className="text-white/70 hover:text-white transition-colors duration-200 text-xs lg:text-sm whitespace-nowrap"
           >
             Testimonials
           </a>
           <a
-            href="#faq"
+            href="/#faq"
+            onClick={(e) => handleSectionLink(e, "faq")}
             className="text-white/70 hover:text-white transition-colors duration-200 text-xs lg:text-sm whitespace-nowrap"
           >
             FAQ
           </a>
         </div>
+        <div className="hidden sm:block flex-1" aria-hidden="true" />
 
         {/* Right: icons + controls */}
         <div className="flex items-center gap-1 sm:gap-2 text-sm font-medium text-white/80 shrink-0">
@@ -393,7 +400,7 @@ export default function NavBar() {
               <li key={item.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors">
                 <div>
                   <p className="text-sm font-medium text-foreground">{item.role}</p>
-                  <p className="text-xs text-muted-foreground">{item.date}</p>
+                  <p className="text-xs text-gray-600">{item.date}</p>
                 </div>
                 <span className="text-sm font-bold text-accent">{item.score}%</span>
               </li>
@@ -439,7 +446,7 @@ export default function NavBar() {
                     <p className="text-sm font-medium text-foreground">{item.title}</p>
                     <span className="text-xs text-muted-foreground shrink-0">{item.date}</span>
                   </div>
-                  <p className={`text-sm text-muted-foreground mt-1 transition-all duration-200 ${isExpanded ? "" : "line-clamp-2"}`}>
+                  <p className={`text-sm text-gray-600 mt-1 transition-all duration-200 ${isExpanded ? "" : "line-clamp-2"}`}>
                     {item.description}
                   </p>
                   <p className="text-xs font-medium text-accent mt-1.5 flex items-center gap-1">
@@ -489,29 +496,29 @@ export default function NavBar() {
             {/* Nav links */}
             <div className="flex-1 px-3 py-4 space-y-1">
               <a
-                href="#trending"
-                onClick={() => setMobileOpen(false)}
+                href="/#trending"
+                onClick={(e) => { handleSectionLink(e, "trending"); setMobileOpen(false); }}
                 className="block px-3 py-2.5 rounded-lg text-sm font-medium text-foreground hover:bg-muted transition-colors"
               >
                 Trending Skills
               </a>
               <a
-                href="#how-it-works"
-                onClick={() => setMobileOpen(false)}
+                href="/#how-it-works"
+                onClick={(e) => { handleSectionLink(e, "how-it-works"); setMobileOpen(false); }}
                 className="block px-3 py-2.5 rounded-lg text-sm font-medium text-foreground hover:bg-muted transition-colors"
               >
                 How It Works
               </a>
               <a
-                href="#testimonials"
-                onClick={() => setMobileOpen(false)}
+                href="/#testimonials"
+                onClick={(e) => { handleSectionLink(e, "testimonials"); setMobileOpen(false); }}
                 className="block px-3 py-2.5 rounded-lg text-sm font-medium text-foreground hover:bg-muted transition-colors"
               >
                 Testimonials
               </a>
               <a
-                href="#faq"
-                onClick={() => setMobileOpen(false)}
+                href="/#faq"
+                onClick={(e) => { handleSectionLink(e, "faq"); setMobileOpen(false); }}
                 className="block px-3 py-2.5 rounded-lg text-sm font-medium text-foreground hover:bg-muted transition-colors"
               >
                 FAQ

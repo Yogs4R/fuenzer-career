@@ -37,9 +37,9 @@ function AnimatedBar({ score, delay }: { score: number; delay: number }) {
   }, [score, delay]);
 
   return (
-    <div className="w-full h-2.5 bg-accent/10 rounded-full overflow-hidden">
+    <div className="w-full h-2.5 bg-gray-200 rounded-full overflow-hidden">
       <div
-        className="h-full rounded-full bg-accent transition-all duration-1000 ease-out"
+        className="h-full rounded-full bg-gray-500 transition-all duration-1000 ease-out"
         style={{ width: `${width}%` }}
       />
     </div>
@@ -151,10 +151,10 @@ export default function EvaluationReport() {
               <AnimatedBar score={m.score} delay={300 + i * 150} />
               <p className="mt-2 text-xs text-muted-foreground">
                 {m.score >= 85
-                  ? "Excellent \u2014 keep it up!"
+                  ? "Excellent — keep it up!"
                   : m.score >= 75
-                  ? "Good \u2014 minor room for improvement"
-                  : "Needs attention \u2014 practise more"}
+                  ? "Good — minor room for improvement"
+                  : "Needs attention — practise more"}
               </p>
             </div>
           ))}
@@ -230,9 +230,9 @@ export default function EvaluationReport() {
             <ul className="space-y-3">
               {[
                 { tip: "Add specific metrics to your project stories (e.g., \"23% improvement\")", priority: "High" },
-                { tip: "Reduce filler words (\"um\", \"uh\") \u2014 try pausing instead", priority: "Medium" },
+                { tip: "Reduce filler words (\"um\", \"uh\") — try pausing instead", priority: "Medium" },
                 { tip: "Structure answers with STAR format for complex questions", priority: "Medium" },
-                { tip: "Practise 2\u20133 more mock sessions before the real interview", priority: "Low" },
+                { tip: "Practise 2–3 more mock sessions before the real interview", priority: "Low" },
               ].map((item) => (
                 <li key={item.tip} className="flex items-start gap-3">
                   <span
