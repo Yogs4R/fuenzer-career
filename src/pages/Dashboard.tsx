@@ -426,7 +426,7 @@ export default function Dashboard() {
             </div>
             <div>
               <h4 className="font-heading text-sm font-semibold text-foreground mb-3">Quick Links</h4>
-              <ul className="space-y-2">
+              <ul className="space-y-2">m
                 <li><a href="#trending" className="text-sm text-muted-foreground hover:text-accent transition-colors">Trending Skills</a></li>
                 <li><a href="#how-it-works" className="text-sm text-muted-foreground hover:text-accent transition-colors">How It Works</a></li>
                 <li><a href="#testimonials" className="text-sm text-muted-foreground hover:text-accent transition-colors">Testimonials</a></li>
@@ -437,7 +437,7 @@ export default function Dashboard() {
               <h4 className="font-heading text-sm font-semibold text-foreground mb-3">Connect</h4>
               <ul className="space-y-2">
                 <li>
-                  <a href="https://github.com" target="_blank" rel="noopener noreferrer"
+                  <a href="https://github.com/Yogs4R/fuenzer-career" target="_blank" rel="noopener noreferrer"
                     className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-accent transition-colors"
                   >
                     <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
@@ -447,20 +447,20 @@ export default function Dashboard() {
                   </a>
                 </li>
                 <li>
-                  <a href="mailto:hello@fuenzer-career.com"
+                  <a href="mailto:fuenzerofficial@gmail.com"
                     className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-accent transition-colors"
                   >
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
                     </svg>
-                    hello@fuenzer-career.com
+                    fuenzerofficial@gmail.com
                   </a>
                 </li>
               </ul>
             </div>
           </div>
           <div className="mt-8 pt-6 border-t border-border text-center">
-            <p className="text-xs text-muted-foreground">&copy; {new Date().getFullYear()} Fuenzer. All rights reserved.</p>
+            <p className="text-xs text-muted-foreground">&copy; {new Date().getFullYear()} Fuenzer Career. All rights reserved.</p>
           </div>
         </div>
       </footer>
