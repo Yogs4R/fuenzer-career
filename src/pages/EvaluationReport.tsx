@@ -163,7 +163,7 @@ export default function EvaluationReport() {
 
   if (!evaluation) return null;
 
-  const { overallScore, perQuestion, skillMatch, delivery } = evaluation;
+  const { overallScore, perQuestion, skillMatch, delivery, fillerWords } = evaluation;
 
   const handleTryAnotherRole = () => {
     reset();
@@ -465,6 +465,62 @@ export default function EvaluationReport() {
               <div className="mb-4 p-3 bg-muted rounded-lg">
                 <p className="text-xs font-semibold text-foreground mb-1">Delivery</p>
                 <p className="text-xs text-muted-foreground">{delivery.feedback}</p>
+              </div>
+            )}
+
+            {/* Filler Word Analysis */}
+            {fillerWords ? (
+              <div className="mb-4 p-4 bg-amber-50/60 border border-amber-200 rounded-lg">
+                <div className="flex items-center gap-2 mb-3">
+                  <svg className="w-4 h-4 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M10.34 15.84c-.688-.06-1.386-.09-2.09-.09H7.5a4.5 4.5 0 110-9h.75c.704 0 1.402-.03 2.09-.09m0 9.18c.253.962.584 1.892.985 2.783.247.55.06 1.21-.463 1.511l-.657.38a.477.477 0 01-.611-.09 17.3 17.3 0 01-2.64-3.744l-.002-.002m6.028-8.838c.253-.962.584-1.892.985-2.783.247-.55.06-1.21-.463-1.511l-.657-.38a.477.477 0 00-.611.09 17.3 17.3 0 00-2.64 3.744l.002.002m0 0a18.95 18.95 0 00-3.464 1.754m0 0a18.94 18.94 0 003.464 1.754m0 0l.002.002" />
+                  </svg>
+                  <h3 className="text-xs font-semibold text-foreground uppercase tracking-wider">
+                    Filler Word Analysis
+                  </h3>
+                  <span className="ml-auto text-xs font-bold text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full">
+                    {fillerWords.totalCount} total
+                  </span>
+                </div>
+
+                {/* Breakdown bars */}
+                {fillerWords.breakdown.length > 0 && (
+                  <div className="space-y-2 mb-3">
+                    {fillerWords.breakdown.map((fw) => {
+                      const maxCount = Math.max(...fillerWords.breakdown.map((b) => b.count));
+                      const pct = maxCount > 0 ? (fw.count / maxCount) * 100 : 0;
+                      return (
+                        <div key={fw.word} className="flex items-center gap-2">
+                          <span className="text-xs font-medium text-foreground w-20 shrink-0 text-right">
+                            "{fw.word}"
+                          </span>
+                          <div className="flex-1 h-5 bg-amber-100 rounded-full overflow-hidden">
+                            <div
+                              className="h-full rounded-full bg-amber-400 transition-all duration-700"
+                              style={{ width: `${pct}%` }}
+                            />
+                          </div>
+                          <span className="text-xs font-semibold text-amber-700 w-6 text-left">
+                            {fw.count}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* AI feedback on filler words */}
+                {fillerWords.feedback && (
+                  <p className="text-xs text-muted-foreground leading-relaxed bg-white/60 rounded p-2 border border-amber-100">
+                    {fillerWords.feedback}
+                  </p>
+                )}
+              </div>
+            ) : (
+              <div className="mb-4 p-3 bg-muted/50 rounded-lg border border-border">
+                <p className="text-xs text-muted-foreground italic">
+                  No filler word data available. Speak your answers with the microphone to get filler word analysis.
+                </p>
               </div>
             )}
 

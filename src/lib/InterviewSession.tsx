@@ -50,6 +50,11 @@ export interface EvaluationData {
   perQuestion: PerQuestionResult[];
   skillMatch: SkillMatch;
   delivery: Delivery;
+  fillerWords?: {
+    totalCount: number;
+    breakdown: { word: string; count: number }[];
+    feedback: string;
+  };
 }
 
 export interface InterviewSessionState {
