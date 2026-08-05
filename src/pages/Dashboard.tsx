@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useNavigate, Link, useLocation } from "react-router-dom";
 import RoleCombobox from "../components/RoleCombobox";
 import { handleSectionLink } from "../lib/sectionLink";
@@ -17,16 +17,26 @@ const fallbackSkills = [
   { name: "Git", count: 50 },
   { name: "Agile", count: 45 },
   { name: "API Integration", count: 52 },
-  { name: "React", count: 85 },
-  { name: "TypeScript", count: 72 },
-  { name: "Python", count: 78 },
-  { name: "Node.js", count: 65 },
-  { name: "AWS", count: 60 },
-  { name: "SQL", count: 55 },
-  { name: "Docker", count: 58 },
-  { name: "Git", count: 50 },
-  { name: "Agile", count: 45 },
-  { name: "API Integration", count: 52 },
+  { name: "Kubernetes", count: 48 },
+  { name: "CI/CD", count: 55 },
+  { name: "Terraform", count: 42 },
+  { name: "GraphQL", count: 40 },
+  { name: "Redis", count: 35 },
+  { name: "MongoDB", count: 52 },
+  { name: "PostgreSQL", count: 58 },
+  { name: "Next.js", count: 60 },
+  { name: "Vue.js", count: 38 },
+  { name: "Angular", count: 42 },
+  { name: "Java", count: 55 },
+  { name: "Go", count: 48 },
+  { name: "Rust", count: 30 },
+  { name: "Machine Learning", count: 52 },
+  { name: "DevOps", count: 56 },
+  { name: "Microservices", count: 50 },
+  { name: "System Design", count: 45 },
+  { name: "Testing", count: 48 },
+  { name: "Security", count: 42 },
+  { name: "Performance", count: 38 },
 ];
 
 const faqItems = [
@@ -128,6 +138,12 @@ export default function Dashboard() {
     useInterviewSession();
 
   const [heroRole, setHeroRole] = useState("");
+
+  /* Clear session error whenever the user edits the role input */
+  const handleRoleChange = (val: string) => {
+    setHeroRole(val);
+    if (session.error) setError(null);
+  };
   const [step, setStep] = useState<DashboardStep>("idle");
   const [selectedKeywords, setSelectedKeywords] = useState<Set<string>>(new Set());
   const [liveKeywords, setLiveKeywords] = useState<{ name: string; count: number }[]>([]);
@@ -136,6 +152,33 @@ export default function Dashboard() {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const [testimonialIndex, setTestimonialIndex] = useState(0);
   const [autoRotate, setAutoRotate] = useState(true);
+
+  /* ── Trending skills search / filter / sort ── */
+  const [trendSearch, setTrendSearch] = useState("");
+  const [trendFilter, setTrendFilter] = useState<"all" | "high" | "mid" | "low">("all");
+  const [trendSort, setTrendSort] = useState<"count_desc" | "count_asc" | "name">("count_desc");
+
+  const displaySkillsRaw = liveKeywords.length > 0
+    ? liveKeywords
+    : fallbackSkills;
+
+  const filteredSortedSkills = useMemo(() => {
+    let skills = displaySkillsRaw;
+    /* Search */
+    if (trendSearch.trim()) {
+      const q = trendSearch.toLowerCase();
+      skills = skills.filter((s) => s.name.toLowerCase().includes(q));
+    }
+    /* Filter */
+    if (trendFilter === "high") skills = skills.filter((s) => s.count > 70);
+    else if (trendFilter === "mid") skills = skills.filter((s) => s.count > 40 && s.count <= 70);
+    else if (trendFilter === "low") skills = skills.filter((s) => s.count <= 40);
+    /* Sort */
+    if (trendSort === "count_desc") skills = [...skills].sort((a, b) => b.count - a.count);
+    else if (trendSort === "count_asc") skills = [...skills].sort((a, b) => a.count - b.count);
+    else if (trendSort === "name") skills = [...skills].sort((a, b) => a.name.localeCompare(b.name));
+    return skills;
+  }, [displaySkillsRaw, trendSearch, trendFilter, trendSort]);
 
   /* Scroll to hash target after navigation */
   useEffect(() => {
@@ -166,24 +209,49 @@ export default function Dashboard() {
     setTestimonialIndex((p) => (p - 1 + testimonials.length) % testimonials.length);
   };
 
+  /* ── Rate limiter: prevent rapid re-clicks ── */
+  const lastCallRef = useRef(0);
+  const CALL_COOLDOWN_MS = 10_000; // 10 seconds between calls
+  const FETCH_TIMEOUT_MS = 30_000; // 30 seconds max per fetch
+
   /* ── Step 1: Market Research ── */
   const handleStart = async () => {
     if (step !== "idle") return;
     const role = heroRole.trim();
     if (!role) return;
 
+    /* Rate limiting — prevent rapid re-clicks */
+    const now = Date.now();
+    if (now - lastCallRef.current < CALL_COOLDOWN_MS) {
+      const remaining = Math.ceil((CALL_COOLDOWN_MS - (now - lastCallRef.current)) / 1000);
+      setError(`Please wait ${remaining} second${remaining > 1 ? "s" : ""} before searching again.`);
+      return;
+    }
+    lastCallRef.current = now;
+
     reset();
     setRole(role);
     setStep("loading_market");
     setMarketError(null);
 
+    /* Create a timeout promise */
+    const timeoutPromise = new Promise<"timeout">((_, reject) => {
+      setTimeout(() => reject(new Error("TIMEOUT")), FETCH_TIMEOUT_MS);
+    });
+
     try {
-      const { data, error } = await supabase.functions.invoke<{
+      const fetchPromise = supabase.functions.invoke<{
         keywords: { name: string; count: number }[];
         error?: string;
       }>("market-agent", {
         body: { role, language: session.language || "en" },
       });
+
+      const result = await Promise.race([fetchPromise, timeoutPromise]);
+
+      if (result === "timeout") throw new Error("TIMEOUT");
+
+      const { data, error } = result;
 
       if (error) throw new Error(error.message);
 
@@ -198,8 +266,17 @@ export default function Dashboard() {
         if (data?.error) setMarketError(data.error);
       }
       setStep("keyword_selection");
-    } catch {
-      setMarketError("Live data temporarily unavailable. Using general skills.");
+      /* Auto-scroll to trending section where the keywords panel appears */
+      setTimeout(() => {
+        document.getElementById("trending")?.scrollIntoView({ behavior: "smooth" });
+      }, 150);
+    } catch (err) {
+      const isTimeout = err instanceof Error && err.message === "TIMEOUT";
+      setMarketError(
+        isTimeout
+          ? "This search is taking longer than expected. Try a different role or check back later."
+          : "Live data temporarily unavailable. Using general skills.",
+      );
       const fallback = fallbackSkills.slice(0, 10).map((s, i) => ({ name: s.name, count: 100 - i * 5 }));
       setLiveKeywords(fallback);
       setKeywords(fallback);
@@ -229,8 +306,12 @@ export default function Dashboard() {
     setKeywordsMinError(false);
     setStep("loading_prep");
 
+    const timeoutPromise = new Promise<"timeout">((_, reject) => {
+      setTimeout(() => reject(new Error("TIMEOUT")), FETCH_TIMEOUT_MS);
+    });
+
     try {
-      const { data, error } = await supabase.functions.invoke<{
+      const fetchPromise = supabase.functions.invoke<{
         questions: string[];
       }>("interview-prep", {
         body: {
@@ -240,6 +321,11 @@ export default function Dashboard() {
         },
       });
 
+      const result = await Promise.race([fetchPromise, timeoutPromise]);
+      if (result === "timeout") throw new Error("TIMEOUT");
+
+      const { data, error } = result;
+
       if (error) throw new Error(error.message);
       const questions = data?.questions ?? [];
       if (questions.length === 0) throw new Error("No questions generated");
@@ -248,7 +334,10 @@ export default function Dashboard() {
       setStep("done");
       navigate("/interview");
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Failed to generate questions";
+      const isTimeout = err instanceof Error && err.message === "TIMEOUT";
+      const msg = isTimeout
+        ? "The question generation is taking too long. Try again with fewer skills selected."
+        : err instanceof Error ? err.message : "Failed to generate questions";
       setError(msg);
       setStep("keyword_selection");
     }
@@ -259,9 +348,9 @@ export default function Dashboard() {
     await handleConfirmKeywords();
   };
 
-  const displaySkills = liveKeywords.length > 0
-    ? [...liveKeywords, ...liveKeywords]
-    : fallbackSkills;
+  const displaySkills = filteredSortedSkills.length > 0
+    ? [...filteredSortedSkills, ...filteredSortedSkills]
+    : filteredSortedSkills;
 
   const isLoading = step === "loading_market" || step === "loading_prep";
 
@@ -293,7 +382,7 @@ export default function Dashboard() {
             Research trending skills in your target role, practise with voice interviews, and get AI-powered feedback — all in one place.
           </p>
           <div className={`mt-8 sm:mt-10 max-w-lg mx-auto transition-all duration-200 ${isLoading ? "pointer-events-none opacity-50" : ""}`}>
-            <RoleCombobox value={heroRole} onChange={setHeroRole} onSubmit={handleStart} variant="hero" />
+            <RoleCombobox value={heroRole} onChange={handleRoleChange} onSubmit={handleStart} variant="hero" />
           </div>
         </div>
       </section>
@@ -351,6 +440,36 @@ export default function Dashboard() {
               </div>
             </div>
           </div>
+
+          {/* ── Trending skills search / filter / sort ── */}
+          <div className="mt-6 flex flex-col sm:flex-row items-start sm:items-center gap-3">
+            <div className="relative flex-1 w-full">
+              <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+              </svg>
+              <input
+                type="text" value={trendSearch} onChange={(e) => setTrendSearch(e.target.value)}
+                placeholder="Search skills..."
+                className="w-full pl-9 pr-3 py-2 rounded-lg border border-border bg-white text-sm text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent transition-all duration-200"
+              />
+            </div>
+            <select value={trendFilter} onChange={(e) => setTrendFilter(e.target.value as "all" | "high" | "mid" | "low")}
+              className="px-3 py-2 rounded-lg border border-border bg-white text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-accent/40 cursor-pointer transition-all duration-200">
+              <option value="all">All levels</option>
+              <option value="high">High demand (&gt;70)</option>
+              <option value="mid">Medium (40–70)</option>
+              <option value="low">Low (&lt;40)</option>
+            </select>
+            <select value={trendSort} onChange={(e) => setTrendSort(e.target.value as "count_desc" | "count_asc" | "name")}
+              className="px-3 py-2 rounded-lg border border-border bg-white text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-accent/40 cursor-pointer transition-all duration-200">
+              <option value="count_desc">Highest first</option>
+              <option value="count_asc">Lowest first</option>
+              <option value="name">Alphabetical</option>
+            </select>
+          </div>
+          {filteredSortedSkills.length === 0 && (
+            <p className="mt-2 text-xs text-muted-foreground">No skills match your search criteria.</p>
+          )}
 
           {/* Keyword Selection Panel */}
           {step === "keyword_selection" && liveKeywords.length > 0 && (

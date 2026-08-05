@@ -6,6 +6,7 @@ import {
   startSpeechmaticsSession,
   countFillerWords,
   type TranscriptEvent,
+  type SpeechmaticsSession,
 } from "../lib/speechmatics";
 import { supabase } from "../lib/supabaseClient";
 
@@ -90,7 +91,7 @@ export default function InterviewRoom() {
   const animFrameRef = useRef<number>(0);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const audioCaptureRef = useRef<ReturnType<typeof createAudioCapture> | null>(null);
-  const smSessionRef = useRef<{ close: () => void } | null>(null);
+  const smSessionRef = useRef<SpeechmaticsSession | null>(null);
   const queueRef = useRef<AudioChunkQueue | null>(null);
 
   const questions = session.questions;
@@ -230,21 +231,33 @@ export default function InterviewRoom() {
   }, [session, resetPerQuestion, cleanupAll, startVisualiser]);
 
   /* ── Stop recording pipeline ── */
-  const stopRecording = useCallback(() => {
+  const stopRecording = useCallback(async () => {
     setMicState("processing");
 
     if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
     if (animFrameRef.current) { cancelAnimationFrame(animFrameRef.current); animFrameRef.current = 0; }
-    if (queueRef.current) { queueRef.current.end(); queueRef.current = null; }
     if (audioCaptureRef.current) { audioCaptureRef.current.stop(); audioCaptureRef.current = null; }
-    if (smSessionRef.current) { try { smSessionRef.current.close(); } catch {} smSessionRef.current = null; }
     if (audioCtxRef.current) { audioCtxRef.current.close().catch(() => {}); audioCtxRef.current = null; }
     if (streamRef.current) { streamRef.current.getTracks().forEach((t) => t.stop()); streamRef.current = null; }
-    if (animFrameRef.current) { cancelAnimationFrame(animFrameRef.current); animFrameRef.current = 0; }
     if (canvasRef.current) {
       const ctx = canvasRef.current.getContext("2d");
       if (ctx) ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
     }
+
+    /* Gracefully close Speechmatics — this sends end_of_stream,
+       waits for EndOfTranscript (up to 3s), then closes the WS. */
+    if (smSessionRef.current) {
+      try {
+        await smSessionRef.current.closeGracefully(3000);
+      } catch {
+        /* fallback: force close */
+        try { smSessionRef.current?.close(); } catch {}
+      }
+      smSessionRef.current = null;
+    }
+
+    /* End the audio chunk queue after the WS has finished */
+    if (queueRef.current) { queueRef.current.end(); queueRef.current = null; }
 
     setTimeout(() => {
       setMicState("idle");

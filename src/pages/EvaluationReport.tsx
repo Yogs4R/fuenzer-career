@@ -1,6 +1,8 @@
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { useInterviewSession } from "../lib/InterviewSession";
+import { useAuth } from "../lib/AuthContext";
+import { supabase } from "../lib/supabaseClient";
 
 /* ── Animated bar component ── */
 function AnimatedBar({ score, delay }: { score: number; delay: number }) {
@@ -24,6 +26,7 @@ function AnimatedBar({ score, delay }: { score: number; delay: number }) {
 export default function EvaluationReport() {
   const navigate = useNavigate();
   const { session, reset } = useInterviewSession();
+  const { user } = useAuth();
   const { evaluation, answers } = session;
 
   const [question, setQuestion] = useState(0);
@@ -40,6 +43,29 @@ export default function EvaluationReport() {
     const timer = setTimeout(() => setScoreVisible(true), 200);
     return () => clearTimeout(timer);
   }, []);
+
+  /* ── Save to interview history if authenticated ── */
+  const [saved, setSaved] = useState(false);
+  useEffect(() => {
+    if (!evaluation || !user || saved) return;
+    const saveHistory = async () => {
+      try {
+        await supabase.from("interview_history").insert({
+          user_id: user.id,
+          role: session.role || "Unknown",
+          keywords: session.keywords,
+          questions: session.questions,
+          answers: session.answers,
+          evaluation: evaluation,
+          overall_score: evaluation.overallScore || 0,
+        });
+        setSaved(true);
+      } catch {
+        // Silently fail — history is a bonus, not critical
+      }
+    };
+    saveHistory();
+  }, [evaluation, user, saved, session]);
 
   if (!evaluation) return null;
 

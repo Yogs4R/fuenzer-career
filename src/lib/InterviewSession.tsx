@@ -1,8 +1,7 @@
 /**
  * InterviewSession — React context that holds the entire guest interview
- * session in client-side state. No database, no auth required.
- *
- * Pages read/write this context instead of router state or mock arrays.
+ * session in client-side state. Persisted to localStorage for guest users
+ * so data survives page reloads.
  */
 
 import {
@@ -10,8 +9,10 @@ import {
   useContext,
   useState,
   useCallback,
+  useEffect,
   type ReactNode,
 } from "react";
+import { useAuth } from "./AuthContext";
 
 /* ── Types ── */
 
@@ -77,6 +78,8 @@ interface InterviewSessionContextValue {
 
 /* ── Default state ── */
 
+const STORAGE_KEY = "fuenzer_interview_session";
+
 const initialState: InterviewSessionState = {
   role: "",
   language: "en",
@@ -89,6 +92,36 @@ const initialState: InterviewSessionState = {
   error: null,
 };
 
+function loadState(): InterviewSessionState {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      /* Ensure all keys exist */
+      return { ...initialState, ...parsed };
+    }
+  } catch {
+    /* ignore corrupt data */
+  }
+  return initialState;
+}
+
+function saveState(state: InterviewSessionState) {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  } catch {
+    /* storage full or unavailable — silently ignore */
+  }
+}
+
+function clearState() {
+  try {
+    localStorage.removeItem(STORAGE_KEY);
+  } catch {
+    /* ignore */
+  }
+}
+
 /* ── Context ── */
 
 const InterviewSessionContext = createContext<InterviewSessionContextValue | null>(
@@ -98,7 +131,25 @@ const InterviewSessionContext = createContext<InterviewSessionContextValue | nul
 /* ── Provider ── */
 
 export function InterviewSessionProvider({ children }: { children: ReactNode }) {
-  const [session, setSession] = useState<InterviewSessionState>(initialState);
+  const { user } = useAuth();
+  const [session, setSession] = useState<InterviewSessionState>(() =>
+    /* If user is authenticated, start fresh; otherwise restore from localStorage */
+    user ? initialState : loadState(),
+  );
+
+  /* Persist to localStorage whenever session changes (guest users only) */
+  useEffect(() => {
+    if (!user) {
+      saveState(session);
+    }
+  }, [session, user]);
+
+  /* Clear localStorage when user signs in */
+  useEffect(() => {
+    if (user) {
+      clearState();
+    }
+  }, [user]);
 
   const setRole = useCallback((role: string) => {
     setSession((prev) => ({ ...prev, role }));
@@ -138,6 +189,7 @@ export function InterviewSessionProvider({ children }: { children: ReactNode }) 
 
   const reset = useCallback(() => {
     setSession(initialState);
+    clearState();
   }, []);
 
   return (

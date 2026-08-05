@@ -33,7 +33,17 @@ export interface FinalTranscript {
 export type TranscriptEvent = PartialTranscript | FinalTranscript;
 
 export interface SpeechmaticsSession {
+  /** Force-close the WebSocket immediately. */
   close: () => void;
+  /**
+   * Gracefully end the session:
+   * 1. Sends end-of-stream to the server.
+   * 2. Waits for EndOfTranscript (up to `timeoutMs`).
+   * 3. Then closes the WebSocket.
+   */
+  closeGracefully: (timeoutMs?: number) => Promise<void>;
+  /** Internal: used by the session to signal end-of-stream completion */
+  _endStream: () => void;
 }
 
 /* ── Token fetch ── */
@@ -69,7 +79,49 @@ export async function startSpeechmaticsSession(
   const wsUrl = `wss://eu.rt.speechmatics.com/v2?jwt=${token}`;
 
   const ws = new WebSocket(wsUrl);
-  const session: SpeechmaticsSession = { close: () => ws.close() };
+
+  /* Resolve / reject helpers for the graceful-close promise */
+  let onEndOfTranscript: (() => void) | null = null;
+  let streamEnded = false;
+
+  const session: SpeechmaticsSession = {
+    close: () => {
+      ws.close();
+    },
+    closeGracefully: async (timeoutMs = 3000) => {
+      /* If the stream hasn't sent end_of_stream yet, do it now.
+         Normally the audio-chunk iterator sends it, but if the
+         caller wants to close before the iterator finishes we
+         send it here. */
+      if (!streamEnded) {
+        streamEnded = true;
+        try {
+          if (ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify({ message: "SetRecognitionConfig", end_of_stream: "end_of_stream" }));
+          }
+        } catch {
+          /* socket already closing */
+        }
+      }
+
+      /* Wait for EndOfTranscript or timeout */
+      await new Promise<void>((resolve) => {
+        onEndOfTranscript = resolve;
+        setTimeout(() => {
+          onEndOfTranscript = null;
+          resolve();
+        }, timeoutMs);
+      });
+
+      /* Now close the socket */
+      if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING) {
+        ws.close();
+      }
+    },
+    _endStream: () => {
+      streamEnded = true;
+    },
+  };
 
   ws.onopen = () => {
     /* Audio format message */
@@ -96,9 +148,12 @@ export async function startSpeechmaticsSession(
           ws.send(chunk);
         }
       }
+      streamEnded = true;
       /* Signal end-of-audio (the user stopped speaking). The server
          will flush remaining audio and send an EndOfTranscript. */
-      ws.send(JSON.stringify({ message: "SetRecognitionConfig", end_of_stream: "end_of_stream" }));
+      if (ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ message: "SetRecognitionConfig", end_of_stream: "end_of_stream" }));
+      }
     })();
   };
 
@@ -117,6 +172,9 @@ export async function startSpeechmaticsSession(
           ) ?? [];
         onEvent({ type: "final", text, words });
       } else if (json.message === "EndOfTranscript") {
+        /* Resolve the graceful-close promise if waiting */
+        onEndOfTranscript?.();
+        onEndOfTranscript = null;
         ws.close();
       }
     } catch {
