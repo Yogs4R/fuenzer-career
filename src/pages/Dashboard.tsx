@@ -34,7 +34,6 @@ const fallbackSkills = [
   { name: "Rust", count: 30 },
   { name: "Machine Learning", count: 52 },
   { name: "DevOps", count: 56 },
-  { name: "Cloud Computing (AWS/Azure/GCP)", count: 95 },
   { name: "Microservices", count: 50 },
   { name: "System Design", count: 45 },
   { name: "Testing", count: 48 },
@@ -277,26 +276,19 @@ export default function Dashboard() {
     setTestimonialIndex((p) => (p - 1 + testimonials.length) % testimonials.length);
   };
 
-  /* ── Rate limiter: prevent rapid re-clicks ── */
-  const lastCallRef = useRef(0);
-  const CALL_COOLDOWN_MS = 20_000; // 3 calls per minute — protect credits
-  const FETCH_TIMEOUT_MS = 30_000; // 30 seconds for market agent
+  /* ── Timeouts ── */
+  const FETCH_TIMEOUT_MS = 30_000; // 30 seconds for market agent (Bright Data has its own rate limit)
   const FETCH_TIMEOUT_MS_PREP = 30_000; // 30 seconds for question generation
+
+  /* ── Rate limiter: only for question generation (interview-prep) ── */
+  const prepCallRef = useRef(0);
+  const PREP_COOLDOWN_MS = 20_000; // 20 seconds between question-gen calls
 
   /* ── Step 1: Market Research ── */
   const handleStart = async () => {
     if (step !== "idle") return;
     const role = heroRole.trim();
     if (!role) return;
-
-    /* Rate limiting — prevent rapid re-clicks */
-    const now = Date.now();
-    if (now - lastCallRef.current < CALL_COOLDOWN_MS) {
-      const remaining = Math.ceil((CALL_COOLDOWN_MS - (now - lastCallRef.current)) / 1000);
-      setError(`Please wait ${remaining} second${remaining > 1 ? "s" : ""} before searching again.`);
-      return;
-    }
-    lastCallRef.current = now;
 
     reset();
     setRole(role);
@@ -373,6 +365,15 @@ export default function Dashboard() {
       setKeywordsMinError(true);
       return;
     }
+
+    /* Rate limiter — prevent rapid question-gen clicks */
+    const now = Date.now();
+    if (now - prepCallRef.current < PREP_COOLDOWN_MS) {
+      const remaining = Math.ceil((PREP_COOLDOWN_MS - (now - prepCallRef.current)) / 1000);
+      setPrepError(`Please wait ${remaining} second${remaining > 1 ? "s" : ""} before generating again.`);
+      return;
+    }
+    prepCallRef.current = now;
     setKeywordsMinError(false);
     setPrepError(null);
     setStep("loading_prep");

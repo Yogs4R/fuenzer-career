@@ -270,8 +270,17 @@ export default function InterviewRoom() {
       if (ctx) ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
     }
 
-    /* Gracefully close Speechmatics — this sends end_of_stream,
-       waits for EndOfTranscript (up to 3s), then closes the WS. */
+    /* ⚠️ Critical order: end the queue FIRST so the audio loop
+       flushes all remaining buffered chunks to the WebSocket and
+       sends end_of_stream naturally. Then wait for EndOfTranscript.
+       Doing queue.end() AFTER closeGracefully caused the server to
+       receive end_of_stream before those chunks arrived, silently
+       dropping the final words of the user's answer. */
+    if (queueRef.current) { queueRef.current.end(); queueRef.current = null; }
+
+    /* Now wait for Speechmatics to finish — streamEnded is already
+       true (set by the async loop), so closeGracefully won't send a
+       redundant end_of_stream. It just waits for EndOfTranscript. */
     if (smSessionRef.current) {
       try {
         await smSessionRef.current.closeGracefully(3000);
@@ -281,9 +290,6 @@ export default function InterviewRoom() {
       }
       smSessionRef.current = null;
     }
-
-    /* End the audio chunk queue after the WS has finished */
-    if (queueRef.current) { queueRef.current.end(); queueRef.current = null; }
 
     setTimeout(() => {
       setMicState("idle");
