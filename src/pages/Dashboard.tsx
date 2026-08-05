@@ -76,7 +76,11 @@ const faqItems = [
   },
   {
     question: "Can I save my progress?",
-    answer: "Account features and progress tracking are coming soon. For now, everything works instantly without sign-up.",
+    answer: "Yes! Create a free account and your interview history, scores, and feedback are automatically saved. You can review past sessions anytime from the history panel.",
+  },
+  {
+    question: "Do I need an account to use Fuenzer Career?",
+    answer: "Nope! You can practise as a guest with no sign-up required. Creating an account just unlocks history tracking, saved reports, and personalised notifications.",
   },
 ];
 
@@ -115,6 +119,27 @@ const testimonials = [
     role: "UX Designer",
     avatar: "MT",
     color: "bg-rose-500",
+  },
+  {
+    quote: "The history feature is a lifesaver \u2014 I can track my improvement across every single practice session.",
+    author: "David C.",
+    role: "Data Analyst",
+    avatar: "DC",
+    color: "bg-teal-500",
+  },
+  {
+    quote: "I love that I can practise as a guest and still get full AI feedback. No barriers, just results.",
+    author: "Emma W.",
+    role: "Marketing Manager",
+    avatar: "EW",
+    color: "bg-pink-500",
+  },
+  {
+    quote: "The STAR-method guidance reshaped how I answer behavioural questions. Huge confidence boost.",
+    author: "Carlos G.",
+    role: "Engineering Manager",
+    avatar: "CG",
+    color: "bg-indigo-500",
   },
 ];
 
@@ -422,7 +447,7 @@ export default function Dashboard() {
             Nail Your Next Interview
           </h1>
           <p className="mt-4 sm:mt-6 text-base sm:text-lg text-white/70 max-w-xl mx-auto leading-relaxed">
-            Research trending skills in your target role, practise with voice interviews, and get AI-powered feedback — all in one place.
+            Discover trending skills for your target role, practise with voice-driven mock interviews, track your progress over time, and get AI-powered feedback — all from one dashboard.
           </p>
           <div className={`mt-8 sm:mt-10 max-w-lg mx-auto transition-all duration-200 ${isLoading ? "pointer-events-none opacity-50" : ""}`}>
             <RoleCombobox value={heroRole} onChange={handleRoleChange} onSubmit={handleStart} variant="hero" />

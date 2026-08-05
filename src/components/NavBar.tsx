@@ -149,9 +149,9 @@ export default function NavBar() {
   /* ── Alpha announcement (always shown when no DB notifications exist) ── */
   const ALPHA_NOTIFICATION: NotificationItem = {
     id: "alpha-release",
-    title: "🚀 We're in Alpha!",
+    title: "🚀 What's New — Database Live!",
     description:
-      "Welcome to Fuenzer Career Alpha! We're actively building the platform — you may encounter rough edges as we iterate. Features like progress tracking, history, and personalized notifications are coming soon. Your feedback helps us improve, so don't hesitate to share your thoughts!",
+      "Practice history and score tracking are now LIVE! Sign in with Google to save your sessions, revisit past evaluation reports, and watch your scores improve over time. Notifications are also active \u2014 we'll keep you posted on new features and updates right here. Thanks for being part of the journey!",
     created_at: new Date().toISOString(),
   };
 
