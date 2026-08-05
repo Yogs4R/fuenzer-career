@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { handleSectionLink } from "../lib/sectionLink";
+import { useInterviewSession } from "../lib/InterviewSession";
 
 const languages = [
   { code: "EN", label: "English" },
@@ -149,10 +150,19 @@ function ModalOverlay({
 
 export default function NavBar() {
   const navigate = useNavigate();
+  const { setLanguage } = useInterviewSession();
   const [lang, setLang] = useState("EN");
   const [langOpen, setLangOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const langRef = useRef<HTMLDivElement>(null);
+
+  /* ── Sync NavBar language to InterviewSession context ── */
+  useEffect(() => {
+    const langCode = lang.toLowerCase();
+    if (langCode === "en" || langCode === "id") {
+      setLanguage(langCode);
+    }
+  }, [lang, setLanguage]);
 
   /* ── Modal state ── */
   const [historyOpen, setHistoryOpen] = useState(false);
@@ -243,6 +253,9 @@ export default function NavBar() {
         >
           Fuenzer Career
         </Link>
+
+        {/* Spacer for mobile — pushes right controls to the right */}
+        <div className="flex-1 sm:hidden" />
 
         {/* Desktop nav links — centered in the navbar */}
         <div className="hidden sm:flex items-center justify-center flex-1 gap-3 lg:gap-5">
@@ -522,8 +535,64 @@ export default function NavBar() {
               </a>
             </div>
 
-            {/* Mobile sidebar: history & notification buttons */}
+            {/* Mobile sidebar: language, history & notification buttons */}
             <div className="px-3 pb-4 pt-2 border-t border-border space-y-1">
+              {/* Language selector */}
+              <div className="relative">
+                <button
+                  onClick={() => setLangOpen((p) => !p)}
+                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-foreground hover:bg-muted transition-colors cursor-pointer"
+                  aria-haspopup="listbox"
+                  aria-expanded={langOpen}
+                  aria-label="Select language"
+                >
+                  <svg className="w-5 h-5 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 017.843 4.582M12 3a8.997 8.997 0 00-7.843 4.582m15.686 0A11.953 11.953 0 0112 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0121 12c0 .778-.099 1.533-.284 2.253m0 0A17.919 17.919 0 0112 16.5c-3.162 0-6.133-.815-8.716-2.247m0 0A9.015 9.015 0 013 12c0-1.605.42-3.113 1.157-4.418" />
+                  </svg>
+                  {selectedLanguage.label}
+                  <svg
+                    className={`w-3 h-3 ml-auto transition-transform duration-200 ${langOpen ? "rotate-180" : ""}`}
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={2.5}
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+
+                {langOpen && (
+                  <ul
+                    role="listbox"
+                    aria-label="Select language"
+                    className="w-full bg-white rounded-lg shadow-xl border border-border py-1 overflow-hidden"
+                  >
+                    {languages.map((l) => (
+                      <li
+                        key={l.code}
+                        role="option"
+                        aria-selected={lang === l.code}
+                        onClick={() => {
+                          setLang(l.code);
+                        }}
+                        className={`px-3 py-2 text-sm cursor-pointer flex items-center justify-between transition-colors duration-100 ${
+                          lang === l.code
+                            ? "bg-accent/10 text-accent font-medium"
+                            : "text-foreground hover:bg-muted"
+                        }`}
+                      >
+                        <span>{l.label}</span>
+                        {lang === l.code && (
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                          </svg>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+
               <button
                 onClick={() => { openHistory(); setMobileOpen(false); }}
                 className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-foreground hover:bg-muted transition-colors cursor-pointer"
@@ -531,7 +600,7 @@ export default function NavBar() {
                 <svg className="w-5 h-5 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-                Practice History
+                History
               </button>
               <button
                 onClick={() => { openNotif(); setMobileOpen(false); }}

@@ -132,6 +132,7 @@ export default function Dashboard() {
   const [selectedKeywords, setSelectedKeywords] = useState<Set<string>>(new Set());
   const [liveKeywords, setLiveKeywords] = useState<{ name: string; count: number }[]>([]);
   const [marketError, setMarketError] = useState<string | null>(null);
+  const [keywordsMinError, setKeywordsMinError] = useState(false);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const [testimonialIndex, setTestimonialIndex] = useState(0);
   const [autoRotate, setAutoRotate] = useState(true);
@@ -214,12 +215,18 @@ export default function Dashboard() {
       else next.add(name);
       return next;
     });
+    setKeywordsMinError(false);
   };
 
   /* ── Step 2: Generate questions ── */
   const handleConfirmKeywords = async () => {
     if (step !== "keyword_selection") return;
     const chosenKeywords = liveKeywords.filter((k) => selectedKeywords.has(k.name));
+    if (chosenKeywords.length < 3) {
+      setKeywordsMinError(true);
+      return;
+    }
+    setKeywordsMinError(false);
     setStep("loading_prep");
 
     try {
@@ -387,17 +394,25 @@ export default function Dashboard() {
               <div className="mt-5 flex items-center gap-3">
                 <button
                   onClick={handleConfirmKeywords}
-                  className="btn-active px-6 py-2.5 rounded-lg bg-primary hover:bg-primary/90 text-white font-semibold text-sm cursor-pointer transition-all duration-200 hover:-translate-y-0.5"
+                  className="btn-active px-6 py-2.5 rounded-lg bg-primary hover:bg-primary/90 text-white font-semibold text-sm cursor-pointer transition-all duration-200 hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0"
                 >
-                  Generate Questions ({selectedKeywords.size} skills)
+                  Next: Generate Questions ({selectedKeywords.size} skills)
                 </button>
                 <button
                   onClick={handleSkipKeywords}
                   className="btn-active px-4 py-2.5 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground border border-border hover:border-accent cursor-pointer transition-all duration-200"
                 >
-                  Skip & Auto-Select
+                  Skip → Auto-pick top 5
                 </button>
               </div>
+              {keywordsMinError && (
+                <p className="mt-2 text-xs text-destructive flex items-center gap-1">
+                  <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+                  </svg>
+                  Select at least 3 skills to continue.
+                </p>
+              )}
             </div>
           )}
 
