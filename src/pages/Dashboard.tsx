@@ -418,6 +418,26 @@ export default function Dashboard() {
     ? [...filteredSortedSkills, ...filteredSortedSkills]
     : filteredSortedSkills;
 
+  /* ── FAQ JSON-LD Schema ── */
+  useEffect(() => {
+    const script = document.createElement("script");
+    script.type = "application/ld+json";
+    script.id = "faq-jsonld";
+    script.textContent = JSON.stringify({
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      "mainEntity": faqItems.map((item) => ({
+        "@type": "Question",
+        "name": item.question,
+        "acceptedAnswer": { "@type": "Answer", "text": item.answer },
+      })),
+    });
+    const existing = document.getElementById("faq-jsonld");
+    if (existing) existing.remove();
+    document.head.appendChild(script);
+    return () => { const e = document.getElementById("faq-jsonld"); if (e) e.remove(); };
+  }, []);
+
   return (
     <div className="min-h-[calc(100vh-3.5rem)] bg-background">
       {/* Loading Overlay */}
