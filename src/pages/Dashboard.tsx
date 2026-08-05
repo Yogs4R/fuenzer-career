@@ -7,6 +7,7 @@ import { useInterviewSession } from "../lib/InterviewSession";
 
 /* ── Fallback skills (used when market-agent fails) ── */
 const fallbackSkills = [
+  /* ── Tech ── */
   { name: "React", count: 85 },
   { name: "TypeScript", count: 72 },
   { name: "Python", count: 78 },
@@ -37,6 +38,27 @@ const fallbackSkills = [
   { name: "Testing", count: 48 },
   { name: "Security", count: 42 },
   { name: "Performance", count: 38 },
+  /* ── Non-tech / Soft skills ── */
+  { name: "Communication", count: 88 },
+  { name: "Leadership", count: 82 },
+  { name: "Problem Solving", count: 86 },
+  { name: "Team Collaboration", count: 80 },
+  { name: "Project Management", count: 75 },
+  { name: "Time Management", count: 72 },
+  { name: "Critical Thinking", count: 78 },
+  { name: "Adaptability", count: 70 },
+  { name: "Emotional Intelligence", count: 65 },
+  { name: "Public Speaking", count: 60 },
+  { name: "Data Analysis", count: 74 },
+  { name: "CRM", count: 58 },
+  { name: "Sales Strategy", count: 62 },
+  { name: "Customer Success", count: 68 },
+  { name: "Negotiation", count: 55 },
+  { name: "Conflict Resolution", count: 52 },
+  { name: "Mentoring", count: 48 },
+  { name: "Cross-functional Collaboration", count: 66 },
+  { name: "Strategic Planning", count: 64 },
+  { name: "Stakeholder Management", count: 62 },
 ];
 
 const faqItems = [
