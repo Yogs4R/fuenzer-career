@@ -277,8 +277,8 @@ export default function Dashboard() {
   /* ── Rate limiter: prevent rapid re-clicks ── */
   const lastCallRef = useRef(0);
   const CALL_COOLDOWN_MS = 10_000; // 10 seconds between calls
-  const FETCH_TIMEOUT_MS = 15_000; // 15 seconds max for market research
-  const FETCH_TIMEOUT_MS_PREP = 15_000; // 15 seconds for question generation
+  const FETCH_TIMEOUT_MS = 60_000; // 60 seconds (testing: generous timeout for deepseek)
+  const FETCH_TIMEOUT_MS_PREP = 60_000; // 60 seconds for question generation
 
   /* ── Step 1: Market Research ── */
   const handleStart = async () => {
@@ -454,10 +454,21 @@ export default function Dashboard() {
               ? "Agent is fetching live market data…"
               : "Agent is generating interview questions…"}
           </p>
-          <p className="text-xs sm:text-sm text-muted-foreground mt-2">
-            {loadingElapsed < 8
-              ? "This will only take a moment."
-              : "Still working — this can take up to 15 seconds."}
+          {/* Live timer counting from 0 */}
+          <div className="mt-4 flex items-center gap-2">
+            <span className="text-4xl sm:text-5xl font-mono font-bold text-accent tabular-nums">
+              {loadingElapsed}
+            </span>
+            <span className="text-sm text-muted-foreground font-medium">
+              second{loadingElapsed !== 1 ? "s" : ""}
+            </span>
+          </div>
+          <p className="text-xs sm:text-sm text-muted-foreground mt-3">
+            {loadingElapsed < 10
+              ? "Searching the market..."
+              : loadingElapsed < 30
+              ? "Still working — fetching live data."
+              : "This is taking a while — thanks for your patience."}
           </p>
         </div>
       )}

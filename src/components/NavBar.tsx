@@ -378,12 +378,14 @@ export default function NavBar() {
             </svg>
           </div>
         ) : paginatedHistory.length === 0 ? (
-          <div className="text-center py-10">
-            <svg className="w-12 h-12 text-muted-foreground/30 mx-auto mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <p className="text-sm text-muted-foreground">No practice sessions yet.</p>
-            <p className="text-xs text-muted-foreground mt-1">Complete an interview to see your history here.</p>
+          <div className="text-center py-12">
+            <div className="w-16 h-16 rounded-full bg-muted/50 flex items-center justify-center mx-auto mb-4">
+              <svg className="w-8 h-8 text-muted-foreground/40" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <p className="font-heading text-base font-semibold text-foreground">No History</p>
+            <p className="text-sm text-muted-foreground mt-1 max-w-[200px] mx-auto">Complete an interview and your practice sessions will show up here.</p>
           </div>
         ) : (
           <ul className="space-y-2">
