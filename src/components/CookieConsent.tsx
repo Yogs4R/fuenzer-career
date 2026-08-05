@@ -63,35 +63,35 @@ export default function CookieConsent() {
     <div
       role="dialog"
       aria-label="Cookie consent"
-      className="fixed bottom-0 left-0 right-0 z-50 p-4 sm:p-6 animate-fade-in-up"
+      className="fixed bottom-0 left-0 right-0 z-50 animate-fade-in-up"
     >
-      <div className="mx-auto max-w-2xl bg-white dark:bg-gray-900 rounded-2xl border border-border shadow-2xl p-5 sm:p-6 flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6">
+      <div className="w-full bg-primary/95 backdrop-blur-md border-t border-white/10 px-4 sm:px-6 py-3 sm:py-3.5 flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4">
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-semibold text-foreground">We value your privacy</p>
-          <p className="text-xs sm:text-sm text-muted-foreground mt-1 leading-relaxed">
+          <p className="text-sm font-semibold text-white">We value your privacy</p>
+          <p className="text-xs sm:text-sm text-white/60 mt-0.5 leading-relaxed">
             We use Google Analytics to understand how you use Fuenzer Career so we can improve it.
             Your data is anonymised and never sold.{" "}
             <a
               href="/privacy"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-accent hover:text-accent/80 underline underline-offset-2 transition-colors"
+              className="text-blue-300 hover:text-white underline underline-offset-2 transition-colors"
             >
               Learn more
             </a>
             .
           </p>
         </div>
-        <div className="flex items-center gap-2 sm:shrink-0">
+        <div className="flex items-center gap-3 sm:shrink-0">
           <button
             onClick={handleReject}
-            className="btn-active px-4 py-2 rounded-lg border-2 border-border text-muted-foreground hover:text-foreground hover:border-accent text-sm font-medium cursor-pointer transition-all duration-200"
+            className="text-sm font-medium text-white/50 hover:text-white cursor-pointer transition-colors duration-200"
           >
             Reject
           </button>
           <button
             onClick={handleAccept}
-            className="btn-active px-5 py-2 rounded-lg bg-primary hover:bg-primary/90 text-white text-sm font-semibold cursor-pointer transition-all duration-200 hover:-translate-y-0.5"
+            className="btn-active px-4 py-1.5 rounded-lg bg-accent hover:bg-accent/90 text-white text-sm font-semibold cursor-pointer transition-all duration-200"
           >
             Accept
           </button>

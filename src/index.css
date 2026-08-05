@@ -130,7 +130,7 @@ html {
 }
 
 .animate-carousel {
-  animation: scrollCarousel 40s linear infinite;
+  animation: scrollCarousel 80s linear infinite;
 }
 
 .animate-carousel-paused {
