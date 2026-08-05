@@ -34,6 +34,7 @@ const fallbackSkills = [
   { name: "Rust", count: 30 },
   { name: "Machine Learning", count: 52 },
   { name: "DevOps", count: 56 },
+  { name: "Cloud Computing (AWS/Azure/GCP)", count: 95 },
   { name: "Microservices", count: 50 },
   { name: "System Design", count: 45 },
   { name: "Testing", count: 48 },
@@ -206,6 +207,8 @@ export default function Dashboard() {
 
   const isLoading = step === "loading_market" || step === "loading_prep";
 
+  /* Hard‑coded fallback skills used when the Market Agent cannot be reached. */
+
   /* ── Trending skills search / filter / sort ── */
   const [trendSearch, setTrendSearch] = useState("");
   const [trendFilter, setTrendFilter] = useState<"all" | "high" | "mid" | "low">("all");
@@ -276,9 +279,9 @@ export default function Dashboard() {
 
   /* ── Rate limiter: prevent rapid re-clicks ── */
   const lastCallRef = useRef(0);
-  const CALL_COOLDOWN_MS = 10_000; // 10 seconds between calls
-  const FETCH_TIMEOUT_MS = 60_000; // 60 seconds (testing: generous timeout for deepseek)
-  const FETCH_TIMEOUT_MS_PREP = 60_000; // 60 seconds for question generation
+  const CALL_COOLDOWN_MS = 20_000; // 3 calls per minute — protect credits
+  const FETCH_TIMEOUT_MS = 30_000; // 30 seconds for market agent
+  const FETCH_TIMEOUT_MS_PREP = 30_000; // 30 seconds for question generation
 
   /* ── Step 1: Market Research ── */
   const handleStart = async () => {
