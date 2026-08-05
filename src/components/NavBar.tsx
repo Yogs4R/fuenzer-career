@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { handleSectionLink } from "../lib/sectionLink";
-import { useInterviewSession, getGuestHistory, type GuestHistoryItem } from "../lib/InterviewSession";
+import { useInterviewSession, getGuestHistory, deleteGuestSession, type GuestHistoryItem } from "../lib/InterviewSession";
 import { useAuth } from "../lib/AuthContext";
 import { supabase } from "../lib/supabaseClient";
 
@@ -379,22 +379,32 @@ export default function NavBar() {
           </div>
         ) : paginatedHistory.length === 0 ? (
           <div className="text-center py-12">
-            <div className="w-16 h-16 rounded-full bg-muted/50 flex items-center justify-center mx-auto mb-4">
-              <svg className="w-8 h-8 text-muted-foreground/40" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.2}>
+            <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
+              <svg className="w-8 h-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
-            <p className="font-heading text-base font-semibold text-foreground">No History</p>
-            <p className="text-sm text-muted-foreground mt-1 max-w-[200px] mx-auto">Complete an interview and your practice sessions will show up here.</p>
+            <p className="font-heading text-base font-semibold text-gray-900">No History</p>
+            <p className="text-sm text-gray-500 mt-1 max-w-[200px] mx-auto">Complete an interview and your practice sessions will show up here.</p>
           </div>
         ) : (
           <ul className="space-y-2">
             {paginatedHistory.map((item) => {
               const isGuest = item.id.startsWith("guest_");
+              const handleDelete = async (e: React.MouseEvent) => {
+                e.stopPropagation();
+                if (isGuest) {
+                  deleteGuestSession(item.id);
+                  setHistoryItems(getGuestHistory());
+                } else {
+                  await supabase.from("interview_history").delete().eq("id", item.id);
+                  fetchHistory();
+                }
+              };
               return (
                 <li key={item.id}
                   onClick={() => {
-                    if (isGuest) return; /* Guest items not backed by DB */
+                    if (isGuest) return;
                     setHistoryOpen(false);
                     navigate(`/report?id=${item.id}`);
                   }}
@@ -406,15 +416,23 @@ export default function NavBar() {
                       navigate(`/report?id=${item.id}`);
                     }
                   }}
-                  className={`flex items-center justify-between p-3 rounded-lg transition-colors ${
+                  className={`flex items-center gap-2 p-3 rounded-lg transition-colors ${
                     isGuest
                       ? "bg-muted/30 cursor-default"
                       : "bg-muted/50 hover:bg-muted cursor-pointer"
                   }`}
                   tabIndex={isGuest ? -1 : 0}
                 >
-                  <div>
-                    <p className={`text-sm font-medium ${isGuest ? "text-muted-foreground" : "text-foreground"}`}>
+                  <button onClick={handleDelete}
+                    className="shrink-0 p-1.5 rounded-md text-gray-400 hover:text-red-500 hover:bg-red-50 cursor-pointer transition-colors"
+                    aria-label={`Delete ${item.role} session`}
+                    title="Delete">
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                    </svg>
+                  </button>
+                  <div className="flex-1 min-w-0">
+                    <p className={`text-sm font-medium truncate ${isGuest ? "text-muted-foreground" : "text-foreground"}`}>
                       {item.role}
                     </p>
                     <p className="text-xs text-gray-600">
@@ -426,7 +444,7 @@ export default function NavBar() {
                       )}
                     </p>
                   </div>
-                  <span className={`text-sm font-bold ${item.overall_score >= 75 ? "text-green-600" : item.overall_score >= 50 ? "text-amber-600" : "text-destructive"}`}>
+                  <span className={`shrink-0 text-sm font-bold ${item.overall_score >= 75 ? "text-green-600" : item.overall_score >= 50 ? "text-amber-600" : "text-destructive"}`}>
                     {item.overall_score}%
                   </span>
                 </li>

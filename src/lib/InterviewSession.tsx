@@ -161,6 +161,16 @@ export function addGuestSession(item: GuestHistoryItem) {
   }
 }
 
+export function deleteGuestSession(id: string) {
+  try {
+    const list = getGuestHistory();
+    const filtered = list.filter((item) => item.id !== id);
+    localStorage.setItem(GUEST_HISTORY_KEY, JSON.stringify(filtered));
+  } catch {
+    /* ignore */
+  }
+}
+
 export function clearGuestHistory() {
   try {
     localStorage.removeItem(GUEST_HISTORY_KEY);
