@@ -4,6 +4,7 @@ import RoleCombobox from "../components/RoleCombobox";
 import { handleSectionLink } from "../lib/sectionLink";
 import { supabase } from "../lib/supabaseClient";
 import { useInterviewSession } from "../lib/InterviewSession";
+import { usePageTitle } from "../hooks/usePageTitle";
 
 /* ── Fallback skills (used when market-agent fails) ── */
 const fallbackSkills = [
@@ -179,6 +180,7 @@ const agents = [
 type DashboardStep = "idle" | "loading_market" | "keyword_selection" | "loading_prep" | "done";
 
 export default function Dashboard() {
+  usePageTitle("AI Interview Coach");
   const navigate = useNavigate();
   const location = useLocation();
   const { session, setRole, setKeywords, setQuestions, setError, reset } =

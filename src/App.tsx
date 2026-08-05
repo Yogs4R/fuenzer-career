@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { InterviewSessionProvider } from "./lib/InterviewSession";
 import { AuthProvider } from "./lib/AuthContext";
 import NavBar from "./components/NavBar";
+import CookieConsent from "./components/CookieConsent";
 import Dashboard from "./pages/Dashboard";
 import InterviewRoom from "./pages/InterviewRoom";
 import EvaluationReport from "./pages/EvaluationReport";
@@ -28,6 +29,7 @@ export default function App() {
               <Route path="/terms" element={<Terms />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
+            <CookieConsent />
           </div>
         </InterviewSessionProvider>
       </AuthProvider>

@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useInterviewSession, type QuestionAnswer, type EvaluationData } from "../lib/InterviewSession";
 import { useAuth } from "../lib/AuthContext";
 import { supabase } from "../lib/supabaseClient";
+import { usePageTitle } from "../hooks/usePageTitle";
 
 /* ── Animated bar component ── */
 function AnimatedBar({ score, delay }: { score: number; delay: number }) {
@@ -24,6 +25,7 @@ function AnimatedBar({ score, delay }: { score: number; delay: number }) {
 }
 
 export default function EvaluationReport() {
+  usePageTitle("Evaluation Report");
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const reportId = searchParams.get("id");

@@ -9,6 +9,7 @@ import {
   type SpeechmaticsSession,
 } from "../lib/speechmatics";
 import { supabase } from "../lib/supabaseClient";
+import { usePageTitle } from "../hooks/usePageTitle";
 
 const starHints = [
   { label: "Situation", text: "Describe the context — the project, team, and what made it complex." },
@@ -60,6 +61,7 @@ class AudioChunkQueue {
 }
 
 export default function InterviewRoom() {
+  usePageTitle("Interview Room");
   const navigate = useNavigate();
   const { session, addAnswer, setEvaluation, setError, setLoading } = useInterviewSession();
 

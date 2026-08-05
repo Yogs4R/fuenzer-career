@@ -1,6 +1,8 @@
 import { Link } from "react-router-dom";
+import { usePageTitle } from "../hooks/usePageTitle";
 
 export default function Privacy() {
+  usePageTitle("Privacy");
   return (
     <div className="min-h-[calc(100vh-3.5rem)] bg-background py-12 sm:py-16">
       <div className="max-w-3xl mx-auto px-4 sm:px-6">
@@ -58,7 +60,34 @@ export default function Privacy() {
             </section>
 
             <section>
-              <h2 className="font-heading text-lg font-semibold text-foreground mb-2">5. Contact</h2>
+              <h2 className="font-heading text-lg font-semibold text-foreground mb-2">5. Cookies &amp; Google Analytics</h2>
+              <p className="text-muted-foreground">
+                Fuenzer Career uses Google Analytics (<strong>G-MKSPXBHK42</strong>) to collect anonymous usage
+                data — which features you use, how long you practise, and general session behaviour. This helps
+                us improve the platform. We do not track you across other sites, and IP addresses are anonymised.
+              </p>
+              <p className="text-muted-foreground mt-2">
+                When you first visit, a cookie consent banner asks you to Accept or Reject analytics cookies.
+                If you <strong>Accept</strong>, Google Analytics is loaded for that session. If you{" "}
+                <strong>Reject</strong>, no analytics scripts run. Your choice is stored in your browser and
+                can be changed at any time by clearing your browser's local storage for this site.
+              </p>
+              <p className="text-muted-foreground mt-2">
+                Google Analytics may set its own cookies (<em>_ga</em>, <em>_ga_&lt;container-id&gt;</em>)
+                to distinguish unique users. These cookies contain no personal data. You can learn more at{" "}
+                <a
+                  href="https://policies.google.com/technologies/cookies"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-accent hover:text-accent/80 underline underline-offset-2 transition-colors"
+                >
+                  Google's Cookie Policy
+                </a>.
+              </p>
+            </section>
+
+            <section>
+              <h2 className="font-heading text-lg font-semibold text-foreground mb-2">6. Contact</h2>
               <p className="text-muted-foreground">
                 If you have questions about this privacy policy, reach out to{" "}
                 <a href="mailto:fuenzerofficial@gmail.com" className="text-accent hover:text-accent/80 underline underline-offset-2 transition-colors">

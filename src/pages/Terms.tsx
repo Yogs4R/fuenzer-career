@@ -1,6 +1,8 @@
 import { Link } from "react-router-dom";
+import { usePageTitle } from "../hooks/usePageTitle";
 
 export default function Terms() {
+  usePageTitle("Terms");
   return (
     <div className="min-h-[calc(100vh-3.5rem)] bg-background py-12 sm:py-16">
       <div className="max-w-3xl mx-auto px-4 sm:px-6">
@@ -67,7 +69,23 @@ export default function Terms() {
             </section>
 
             <section>
-              <h2 className="font-heading text-lg font-semibold text-foreground mb-2">7. Contact</h2>
+              <h2 className="font-heading text-lg font-semibold text-foreground mb-2">7. Cookies &amp; Analytics</h2>
+              <p className="text-muted-foreground">
+                Fuenzer Career uses Google Analytics to understand how the platform is used and to improve
+                your experience. When you first visit, you are asked to Accept or Reject analytics cookies.
+                If you Accept, anonymous usage data (page views, feature interactions, session duration) is
+                collected. If you Reject, no analytics scripts run. Your preference is stored locally and
+                can be changed by clearing your browser's local storage for this site.
+              </p>
+              <p className="text-muted-foreground mt-2">
+                You must be at least 16 years old to use Fuenzer Career. By accepting cookies, you confirm
+                that you are 16 or older. If you are under 16, please reject cookies and do not use the
+                platform until you meet the age requirement.
+              </p>
+            </section>
+
+            <section>
+              <h2 className="font-heading text-lg font-semibold text-foreground mb-2">8. Contact</h2>
               <p className="text-muted-foreground">
                 For questions about these terms, contact{" "}
                 <a href="mailto:fuenzerofficial@gmail.com" className="text-accent hover:text-accent/80 underline underline-offset-2 transition-colors">
