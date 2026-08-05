@@ -10,6 +10,7 @@ import {
   useState,
   useCallback,
   useEffect,
+  useRef,
   type ReactNode,
 } from "react";
 import { useAuth } from "./AuthContext";
@@ -137,19 +138,50 @@ export function InterviewSessionProvider({ children }: { children: ReactNode }) 
     user ? initialState : loadState(),
   );
 
-  /* Persist to localStorage whenever session changes (guest users only) */
+  /* Track previous user value so we detect sign-out transitions */
+  const prevUserRef = useRef(user);
+  prevUserRef.current = user;
+
+  /*
+   * Single combined effect for all persistence concerns.
+   *
+   * Ordering is critical:
+   *   1. Sign-out must clear localStorage & reset session BEFORE any save runs.
+   *   2. Guest save must only persist non-empty sessions (has a role), never stale
+   *      authenticated data that was left in memory during the sign-out render.
+   *   3. Sign-in must clear localStorage and reset in-memory state.
+   */
   useEffect(() => {
-    if (!user) {
+    const wasSignedIn = !!prevUserRef.current;
+    const isNowSignedOut = wasSignedIn && !user;
+    const isNowSignedIn = !wasSignedIn && !!user;
+
+    /* ── Sign-out: user went from truthy → null ── */
+    if (isNowSignedOut) {
+      clearState();
+      setSession(initialState);
+      return; /* Do NOT save the stale authenticated session */
+    }
+
+    /* ── Sign-in: user went from null → truthy ── */
+    if (isNowSignedIn) {
+      clearState();
+      setSession(initialState);
+      return;
+    }
+
+    /* ── Guest with an active session → persist progressively ── */
+    if (!user && session.role) {
       saveState(session);
     }
-  }, [session, user]);
+  }, [user, session]);
 
-  /* Clear localStorage when user signs in */
-  useEffect(() => {
-    if (user) {
-      clearState();
-    }
-  }, [user]);
+  /*
+   * Progressive guest saving — call saveState immediately inside functional
+   * updaters so data is persisted mid-interview without waiting for a render
+   * cycle. This prevents data loss if the component unmounts before the
+   * useEffect fires.
+   */
 
   const setRole = useCallback((role: string) => {
     setSession((prev) => ({ ...prev, role }));
@@ -160,23 +192,39 @@ export function InterviewSessionProvider({ children }: { children: ReactNode }) 
   }, []);
 
   const setKeywords = useCallback((keywords: Keyword[]) => {
-    setSession((prev) => ({ ...prev, keywords }));
+    setSession((prev) => {
+      const next = { ...prev, keywords };
+      if (!prevUserRef.current) saveState(next);
+      return next;
+    });
   }, []);
 
   const setQuestions = useCallback((questions: string[]) => {
-    setSession((prev) => ({ ...prev, questions }));
+    setSession((prev) => {
+      const next = { ...prev, questions };
+      if (!prevUserRef.current) saveState(next);
+      return next;
+    });
   }, []);
 
   const addAnswer = useCallback((answer: QuestionAnswer) => {
-    setSession((prev) => ({
-      ...prev,
-      answers: [...prev.answers, answer],
-      totalFillerCount: prev.totalFillerCount + answer.fillerCount,
-    }));
+    setSession((prev) => {
+      const next = {
+        ...prev,
+        answers: [...prev.answers, answer],
+        totalFillerCount: prev.totalFillerCount + answer.fillerCount,
+      };
+      if (!prevUserRef.current) saveState(next);
+      return next;
+    });
   }, []);
 
   const setEvaluation = useCallback((evaluation: EvaluationData) => {
-    setSession((prev) => ({ ...prev, evaluation }));
+    setSession((prev) => {
+      const next = { ...prev, evaluation };
+      if (!prevUserRef.current) saveState(next);
+      return next;
+    });
   }, []);
 
   const setLoading = useCallback((isLoading: boolean) => {

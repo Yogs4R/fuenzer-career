@@ -535,7 +535,7 @@ export default function InterviewRoom() {
                 <p className="mt-1 text-xs text-muted-foreground">
                   {textAnswer.trim().length > 0
                     ? `${textAnswer.trim().split(/\s+/).length} words`
-                    : "Answer will be evaluated as-is."}
+                    : "Type your answer above to continue."}
                 </p>
               </div>
             )}
@@ -709,8 +709,8 @@ export default function InterviewRoom() {
                 </button>
               )}
 
-              {/* Next / Finish button */}
-              {hasRecording && !isEvaluating && (
+              {/* Next / Finish button — in textarea mode, require non-empty text */}
+              {hasRecording && !isEvaluating && (!useTextarea || textAnswer.trim().length > 0) && (
                 <button
                   onClick={handleNext}
                   className="btn-active px-8 py-2.5 rounded-lg font-semibold text-sm shadow-md cursor-pointer transition-all duration-200 bg-primary hover:bg-primary/90 text-white hover:-translate-y-0.5"
