@@ -1,18 +1,13 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-
-const mockQuestions = [
-  "Tell me about a time you optimised a complex web application. What approach did you take and what was the outcome?",
-  "Describe a situation where you had to work under a tight deadline. How did you manage your time and deliver?",
-  "Can you walk me through a project where you collaborated with a cross-functional team? What was your role?",
-  "Tell me about a time you received constructive criticism. How did you respond and what did you learn?",
-  "Describe a technical challenge you faced that you couldn't solve immediately. How did you work through it?",
-  "Give an example of a time you took initiative beyond your job description. What motivated you?",
-  "Tell me about a time you had to communicate a complex idea to a non-technical audience. How did you approach it?",
-  "Describe a situation where you disagreed with a teammate or manager. How was it resolved?",
-  "Tell me about a project or result you are most proud of. What made it successful?",
-  "If you were starting your current role over again, what would you do differently and why?",
-];
+import { useInterviewSession } from "../lib/InterviewSession";
+import { createAudioCapture } from "../lib/audio";
+import {
+  startSpeechmaticsSession,
+  countFillerWords,
+  type TranscriptEvent,
+} from "../lib/speechmatics";
+import { supabase } from "../lib/supabaseClient";
 
 const starHints = [
   { label: "Situation", text: "Describe the context — the project, team, and what made it complex." },
@@ -23,8 +18,49 @@ const starHints = [
 
 type MicState = "idle" | "recording" | "processing";
 
+/* ── Bridge: push-based PCM chunks → async iterable ── */
+class AudioChunkQueue {
+  private _buffer: ArrayBuffer[] = [];
+  private _resolve: ((value: IteratorResult<ArrayBuffer>) => void) | null = null;
+  private _ended = false;
+
+  push(chunk: ArrayBuffer) {
+    if (this._resolve) {
+      const r = this._resolve;
+      this._resolve = null;
+      r({ value: chunk, done: false as const });
+    } else {
+      this._buffer.push(chunk);
+    }
+  }
+
+  end() {
+    this._ended = true;
+    if (this._resolve) {
+      this._resolve({ value: undefined as unknown as ArrayBuffer, done: true as const });
+    }
+  }
+
+  [Symbol.asyncIterator](): AsyncIterator<ArrayBuffer> {
+    return {
+      next: (): Promise<IteratorResult<ArrayBuffer>> => {
+        if (this._buffer.length > 0) {
+          return Promise.resolve({ value: this._buffer.shift()!, done: false as const });
+        }
+        if (this._ended) {
+          return Promise.resolve({ value: undefined as unknown as ArrayBuffer, done: true as const });
+        }
+        return new Promise<IteratorResult<ArrayBuffer>>((resolve) => {
+          this._resolve = resolve;
+        });
+      },
+    };
+  }
+}
+
 export default function InterviewRoom() {
   const navigate = useNavigate();
+  const { session, addAnswer, setEvaluation, setError, setLoading } = useInterviewSession();
 
   const [questionIndex, setQuestionIndex] = useState(0);
   const [micState, setMicState] = useState<MicState>("idle");
@@ -32,26 +68,108 @@ export default function InterviewRoom() {
   const [showHint, setShowHint] = useState(false);
   const [elapsed, setElapsed] = useState(0); // seconds
 
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+  /* Speechmatics state */
+  const [partialTranscript, setPartialTranscript] = useState("");
+  const [currentTranscript, setCurrentTranscript] = useState("");
+  const [currentFillerCount, setCurrentFillerCount] = useState(0);
 
-  /* ── Audio visualiser ── */
+  /* Fallback textarea (mic unavailable) */
+  const [micError, setMicError] = useState<string | null>(null);
+  const [useTextarea, setUseTextarea] = useState(false);
+  const [textAnswer, setTextAnswer] = useState("");
+
+  /* Evaluation */
+  const [isEvaluating, setIsEvaluating] = useState(false);
+
+  /* Refs */
+  const canvasRef = useRef<HTMLCanvasElement>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const sourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const animFrameRef = useRef<number>(0);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const audioCaptureRef = useRef<ReturnType<typeof createAudioCapture> | null>(null);
+  const smSessionRef = useRef<{ close: () => void } | null>(null);
+  const queueRef = useRef<AudioChunkQueue | null>(null);
 
-  /* ── Start / stop recording ── */
-  const startRecording = useCallback(async () => {
-    setMicState("recording");
+  const questions = session.questions;
+  const totalQuestions = questions.length;
+
+  /* Redirect if no questions in session */
+  useEffect(() => {
+    if (totalQuestions === 0) {
+      navigate("/", { replace: true });
+    }
+  }, [totalQuestions, navigate]);
+
+  /* ── Reset per-question state ── */
+  const resetPerQuestion = useCallback(() => {
+    setPartialTranscript("");
+    setCurrentTranscript("");
+    setCurrentFillerCount(0);
+    setMicError(null);
+    setUseTextarea(false);
+    setTextAnswer("");
+    setHasRecording(false);
     setElapsed(0);
+    setShowHint(false);
+    setMicState("idle");
+  }, []);
+
+  /* ── Cleanup all audio / Speechmatics resources ── */
+  const cleanupAll = useCallback(() => {
+    if (smSessionRef.current) { try { smSessionRef.current.close(); } catch {} smSessionRef.current = null; }
+    if (queueRef.current) { try { queueRef.current.end(); } catch {} queueRef.current = null; }
+    if (audioCaptureRef.current) { try { audioCaptureRef.current.stop(); } catch {} audioCaptureRef.current = null; }
+    if (audioCtxRef.current) { audioCtxRef.current.close().catch(() => {}); audioCtxRef.current = null; }
+    if (streamRef.current) { streamRef.current.getTracks().forEach((t) => t.stop()); streamRef.current = null; }
+    if (animFrameRef.current) { cancelAnimationFrame(animFrameRef.current); animFrameRef.current = 0; }
+    if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
+    if (canvasRef.current) {
+      const ctx = canvasRef.current.getContext("2d");
+      if (ctx) ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+    }
+  }, []);
+
+  /* ── Helper: visualiser draw loop ── */
+  const startVisualiser = useCallback(() => {
+    const draw = () => {
+      if (!analyserRef.current || !canvasRef.current) return;
+      const canvas = canvasRef.current;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return;
+      const bufLen = analyserRef.current.frequencyBinCount;
+      const data = new Uint8Array(bufLen);
+      analyserRef.current.getByteFrequencyData(data);
+      const w = canvas.width;
+      const h = canvas.height;
+      ctx.clearRect(0, 0, w, h);
+      const barW = (w / bufLen) * 2.5;
+      let x = 0;
+      for (let i = 0; i < bufLen; i++) {
+        const barH = (data[i] / 255) * h;
+        ctx.fillStyle = `hsl(${220 + (data[i] / 255) * 40}, 70%, 55%)`;
+        ctx.fillRect(x, h - barH, barW - 1, barH);
+        x += barW;
+      }
+      animFrameRef.current = requestAnimationFrame(draw);
+    };
+    draw();
+  }, []);
+
+  /* ── Start recording pipeline ── */
+  const startRecording = useCallback(async () => {
+    resetPerQuestion();
+    setMicState("recording");
 
     try {
+      /* 1. Get mic stream */
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       streamRef.current = stream;
 
-      const audioCtx = new AudioContext();
+      /* 2. AudioContext + Analyser for visualiser */
+      const audioCtx = new AudioContext({ sampleRate: 16000 });
       audioCtxRef.current = audioCtx;
       const source = audioCtx.createMediaStreamSource(stream);
       sourceRef.current = source;
@@ -60,73 +178,69 @@ export default function InterviewRoom() {
       analyserRef.current = analyser;
       source.connect(analyser);
 
-      /* Start timer */
-      timerRef.current = setInterval(() => {
-        setElapsed((prev) => prev + 1);
-      }, 1000);
+      /* 3. Timer */
+      timerRef.current = setInterval(() => setElapsed((p) => p + 1), 1000);
 
-      /* Start drawing visualiser */
-      const draw = () => {
-        if (!analyserRef.current || !canvasRef.current) return;
-        const canvas = canvasRef.current;
-        const ctx = canvas.getContext("2d");
-        if (!ctx) return;
+      /* 4. Visualiser */
+      startVisualiser();
 
-        const bufferLength = analyserRef.current.frequencyBinCount;
-        const dataArray = new Uint8Array(bufferLength);
-        analyserRef.current.getByteFrequencyData(dataArray);
+      /* 5. Audio capture + chunk queue */
+      const capture = createAudioCapture();
+      audioCaptureRef.current = capture;
+      const queue = new AudioChunkQueue();
+      queueRef.current = queue;
 
-        const width = canvas.width;
-        const height = canvas.height;
+      /* 6. Speechmatics session */
+      const lang = session.language || "en";
+      const vocab = [session.role, ...session.keywords.map((k) => k.name)].filter(Boolean);
+      const smSession = await startSpeechmaticsSession(
+        lang as "en" | "id",
+        (event: TranscriptEvent) => {
+          if (event.type === "partial") {
+            setPartialTranscript(event.text);
+          } else if (event.type === "final") {
+            setCurrentTranscript((prev) => (prev ? prev + " " : "") + event.text);
+            const filler = countFillerWords(event.words);
+            setCurrentFillerCount((prev) => prev + filler.count);
+          }
+        },
+        queue,
+        vocab,
+      );
+      smSessionRef.current = smSession;
 
-        ctx.clearRect(0, 0, width, height);
-
-        const barWidth = (width / bufferLength) * 2.5;
-        let x = 0;
-        for (let i = 0; i < bufferLength; i++) {
-          const barHeight = (dataArray[i] / 255) * height;
-          const hue = 220 + (dataArray[i] / 255) * 40;
-          ctx.fillStyle = `hsl(${hue}, 70%, 55%)`;
-          ctx.fillRect(x, height - barHeight, barWidth - 1, barHeight);
-          x += barWidth;
-        }
-
-        animFrameRef.current = requestAnimationFrame(draw);
-      };
-      draw();
-    } catch {
-      /* Permission denied or no mic */
+      /* 7. Feed audio into queue */
+      capture.start((chunk: ArrayBuffer) => {
+        if (queueRef.current) queueRef.current.push(chunk);
+      });
+    } catch (err: unknown) {
+      cleanupAll();
       setMicState("idle");
+      if (err instanceof DOMException && err.name === "NotAllowedError") {
+        setMicError("Microphone access was denied. Type your answer instead.");
+      } else if (err instanceof DOMException && err.name === "NotFoundError") {
+        setMicError("No microphone found. Type your answer instead.");
+      } else {
+        const msg = err instanceof Error ? err.message : "Failed to start";
+        setMicError(`Voice service temporarily unavailable — ${msg}. Type your answer instead.`);
+      }
+      setUseTextarea(true);
+      setHasRecording(true);
     }
-  }, []);
+  }, [session, resetPerQuestion, cleanupAll, startVisualiser]);
 
+  /* ── Stop recording pipeline ── */
   const stopRecording = useCallback(() => {
     setMicState("processing");
 
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
-      timerRef.current = null;
-    }
-
-    /* Stop AudioContext */
-    if (audioCtxRef.current) {
-      audioCtxRef.current.close();
-      audioCtxRef.current = null;
-    }
-
-    /* Stop media tracks */
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach((t) => t.stop());
-      streamRef.current = null;
-    }
-
-    /* Stop animation frame */
-    if (animFrameRef.current) {
-      cancelAnimationFrame(animFrameRef.current);
-      animFrameRef.current = 0;
-    }
-
-    /* Clear canvas */
+    if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
+    if (animFrameRef.current) { cancelAnimationFrame(animFrameRef.current); animFrameRef.current = 0; }
+    if (queueRef.current) { queueRef.current.end(); queueRef.current = null; }
+    if (audioCaptureRef.current) { audioCaptureRef.current.stop(); audioCaptureRef.current = null; }
+    if (smSessionRef.current) { try { smSessionRef.current.close(); } catch {} smSessionRef.current = null; }
+    if (audioCtxRef.current) { audioCtxRef.current.close().catch(() => {}); audioCtxRef.current = null; }
+    if (streamRef.current) { streamRef.current.getTracks().forEach((t) => t.stop()); streamRef.current = null; }
+    if (animFrameRef.current) { cancelAnimationFrame(animFrameRef.current); animFrameRef.current = 0; }
     if (canvasRef.current) {
       const ctx = canvasRef.current.getContext("2d");
       if (ctx) ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
@@ -139,49 +253,97 @@ export default function InterviewRoom() {
   }, []);
 
   const toggleRecording = () => {
-    if (micState === "idle") {
+    if (micState === "idle" && !useTextarea) {
       startRecording();
     } else if (micState === "recording") {
       stopRecording();
     }
   };
 
-  const handleNext = () => {
-    if (questionIndex < mockQuestions.length - 1) {
-      setQuestionIndex((p) => p + 1);
-      setHasRecording(false);
-      setShowHint(false);
-    } else {
-      navigate("/report");
-    }
-  };
+  /* ── Submit current answer and advance / finish ── */
+  const submitCurrentAnswer = useCallback(() => {
+    const answerText = useTextarea ? textAnswer.trim() : currentTranscript.trim();
+    const fillerCount = useTextarea ? 0 : currentFillerCount;
+    const fillerWords: string[] = useTextarea ? [] : [];
 
-  const handleSkip = () => {
-    if (questionIndex < mockQuestions.length - 1) {
-      setQuestionIndex((p) => p + 1);
-      setHasRecording(false);
-      setShowHint(false);
-    } else {
-      navigate("/report");
-    }
-  };
+    addAnswer({
+      question: questions[questionIndex],
+      answer: answerText || "[No answer provided]",
+      fillerCount,
+      fillerWords,
+    });
+  }, [useTextarea, textAnswer, currentTranscript, currentFillerCount, addAnswer, questions, questionIndex]);
 
-  const handleRetry = () => {
-    setHasRecording(false);
-    setMicState("idle");
-    setElapsed(0);
-    setShowHint(false);
-  };
+  const handleNext = useCallback(() => {
+    submitCurrentAnswer();
+    if (questionIndex < totalQuestions - 1) {
+      setQuestionIndex((p) => p + 1);
+      resetPerQuestion();
+    } else {
+      /* Last question — trigger evaluation */
+      handleFinishEvaluation();
+    }
+  }, [submitCurrentAnswer, questionIndex, totalQuestions, resetPerQuestion]);
+
+  const handleSkip = useCallback(() => {
+    /* Add empty answer for skipped question */
+    if (!useTextarea && !hasRecording) {
+      addAnswer({
+        question: questions[questionIndex],
+        answer: "[Skipped]",
+        fillerCount: 0,
+        fillerWords: [],
+      });
+    }
+    if (questionIndex < totalQuestions - 1) {
+      setQuestionIndex((p) => p + 1);
+      resetPerQuestion();
+    } else {
+      handleFinishEvaluation();
+    }
+  }, [questionIndex, totalQuestions, resetPerQuestion, addAnswer, questions, useTextarea, hasRecording]);
+
+  const handleFinishEvaluation = useCallback(async () => {
+    if (isEvaluating) return;
+    setIsEvaluating(true);
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("evaluation", {
+        body: {
+          role: session.role,
+          language: session.language || "en",
+          keywords: session.keywords,
+          questions: session.questions,
+          answers: session.answers,
+        },
+      });
+      if (error) throw new Error(error.message);
+      setEvaluation(data);
+      navigate("/report");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Evaluation failed";
+      setError(msg);
+      setLoading(false);
+      setIsEvaluating(false);
+    }
+  }, [isEvaluating, session, setLoading, setEvaluation, navigate]);
+
+  const handleRetry = useCallback(() => {
+    /* If in textarea mode with text, keep it */
+    if (useTextarea) {
+      setHasRecording(false);
+      setMicState("idle");
+      return;
+    }
+    resetPerQuestion();
+  }, [useTextarea, resetPerQuestion]);
 
   /* Cleanup on unmount */
   useEffect(() => {
     return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
-      if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
-      if (audioCtxRef.current) audioCtxRef.current.close();
-      if (streamRef.current) streamRef.current.getTracks().forEach((t) => t.stop());
+      cleanupAll();
     };
-  }, []);
+  }, [cleanupAll]);
 
   /* ── Format elapsed time ── */
   const formatTime = (s: number) => {
@@ -198,11 +360,14 @@ export default function InterviewRoom() {
       case "processing":
         return "bg-accent/10 text-accent border-2 border-accent shadow-md";
       default:
+        if (useTextarea) return "bg-muted border-2 border-border text-muted-foreground opacity-50 cursor-not-allowed";
         return "bg-white border-2 border-border text-muted-foreground hover:border-accent hover:text-accent shadow-md";
     }
   };
 
   const getStatusText = () => {
+    if (useTextarea && !micError) return { text: "Type your answer below", color: "text-muted-foreground" };
+    if (micError) return { text: micError, color: "text-amber-600" };
     switch (micState) {
       case "recording":
         return { text: "Recording... Tap to stop", color: "text-destructive" };
@@ -226,7 +391,7 @@ export default function InterviewRoom() {
             <span>Mock Interview</span>
           </div>
           <span className="text-xs font-medium text-muted-foreground bg-muted px-2.5 py-1 rounded-full">
-            Question {questionIndex + 1} of {mockQuestions.length}
+            Question {questionIndex + 1} of {totalQuestions}
           </span>
         </div>
       </div>
@@ -243,11 +408,61 @@ export default function InterviewRoom() {
               </span>
             </div>
             <p className="text-lg sm:text-xl text-foreground font-heading font-medium leading-relaxed">
-              {mockQuestions[questionIndex]}
+              {questions[questionIndex]}
             </p>
             <p className="mt-4 text-sm text-muted-foreground border-t border-border pt-4">
               Take a moment to gather your thoughts, then press the microphone and speak your answer clearly.
             </p>
+
+            {/* Live partial transcript during recording */}
+            {(micState === "recording" || micState === "processing") && partialTranscript && (
+              <div className="mt-4 p-3 rounded-lg bg-muted/40 border border-border/50">
+                <p className="text-xs text-muted-foreground font-medium mb-1">Live transcription</p>
+                <p className="text-sm text-foreground italic leading-relaxed">{partialTranscript}</p>
+              </div>
+            )}
+
+            {/* Final transcript after stop */}
+            {hasRecording && !useTextarea && micState !== "recording" && micState !== "processing" && currentTranscript && (
+              <div className="mt-4 p-3 rounded-lg bg-accent/5 border border-accent/10">
+                <p className="text-xs text-accent font-medium mb-1">
+                  Your answer ({currentFillerCount} filler word{currentFillerCount !== 1 ? "s" : ""})
+                </p>
+                <p className="text-sm text-foreground leading-relaxed">{currentTranscript}</p>
+              </div>
+            )}
+
+            {/* Mic error banner */}
+            {micError && (
+              <div className="mt-4 p-3 rounded-lg bg-amber-50 border border-amber-200 text-sm text-amber-800 flex items-center gap-2">
+                <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+                </svg>
+                {micError}
+              </div>
+            )}
+
+            {/* Textarea fallback when mic unavailable */}
+            {useTextarea && (
+              <div className="mt-4">
+                <label htmlFor="text-answer" className="block text-sm font-medium text-foreground mb-2">
+                  Type your answer
+                </label>
+                <textarea
+                  id="text-answer"
+                  rows={5}
+                  placeholder="Type your answer here..."
+                  value={textAnswer}
+                  onChange={(e) => setTextAnswer(e.target.value)}
+                  className="w-full rounded-lg border border-border bg-white px-4 py-3 text-sm text-foreground placeholder-muted-foreground focus-visible:outline-2 focus-visible:outline-ring resize-y"
+                />
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {textAnswer.trim().length > 0
+                    ? `${textAnswer.trim().split(/\s+/).length} words`
+                    : "Answer will be evaluated as-is."}
+                </p>
+              </div>
+            )}
 
             {/* Need a Hint? — inline collapsible inside the question card */}
             <div className="mt-4">
@@ -320,9 +535,10 @@ export default function InterviewRoom() {
               aria-hidden="true"
             />
 
-            {/* Microphone Button — no red dot */}
+            {/* Microphone Button */}
             <button
               onClick={toggleRecording}
+              disabled={useTextarea}
               className={`btn-active w-20 h-20 sm:w-24 sm:h-24 rounded-full flex items-center justify-center transition-all duration-200 relative cursor-pointer ${getMicButtonClasses()}`}
               aria-label={
                 micState === "recording"
@@ -346,22 +562,29 @@ export default function InterviewRoom() {
               )}
             </button>
 
-            {/* Status label + Timer */}
+            {/* Status label + Timer + Filler badge */}
             <div className="flex items-center gap-3">
               <span className={`text-sm font-medium transition-all duration-200 ${getStatusText().color}`}>
                 {getStatusText().text}
               </span>
               {micState === "recording" && (
-                <span className="text-sm font-mono font-semibold text-destructive bg-destructive/10 px-2 py-0.5 rounded-md">
-                  {formatTime(elapsed)}
-                </span>
+                <>
+                  <span className="text-sm font-mono font-semibold text-destructive bg-destructive/10 px-2 py-0.5 rounded-md">
+                    {formatTime(elapsed)}
+                  </span>
+                  {currentFillerCount > 0 && (
+                    <span className="text-xs font-medium text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
+                      {currentFillerCount} filler word{currentFillerCount !== 1 ? "s" : ""}
+                    </span>
+                  )}
+                </>
               )}
             </div>
 
             {/* Action buttons row */}
             <div className="flex items-center gap-4 mt-2">
-              {/* Skip button (always visible) */}
-              {micState === "idle" && !hasRecording && (
+              {/* Skip button (visible when idle and not recorded) */}
+              {micState === "idle" && !hasRecording && !useTextarea && (
                 <button
                   onClick={handleSkip}
                   className="btn-active px-6 py-2.5 rounded-lg font-semibold text-sm cursor-pointer transition-all duration-200 border-2 border-border text-muted-foreground hover:border-accent hover:text-accent hover:-translate-y-0.5"
@@ -371,7 +594,7 @@ export default function InterviewRoom() {
               )}
 
               {/* Retry button (visible after recording) */}
-              {hasRecording && (
+              {hasRecording && !isEvaluating && (
                 <button
                   onClick={handleRetry}
                   className="btn-active px-6 py-2.5 rounded-lg font-semibold text-sm cursor-pointer transition-all duration-200 border-2 border-border text-muted-foreground hover:border-amber-500 hover:text-amber-600 hover:-translate-y-0.5"
@@ -386,18 +609,45 @@ export default function InterviewRoom() {
               )}
 
               {/* Next / Finish button */}
-              {hasRecording && (
+              {hasRecording && !isEvaluating && (
                 <button
                   onClick={handleNext}
                   className="btn-active px-8 py-2.5 rounded-lg font-semibold text-sm shadow-md cursor-pointer transition-all duration-200 bg-primary hover:bg-primary/90 text-white hover:-translate-y-0.5"
                 >
-                  {questionIndex < mockQuestions.length - 1 ? "Next Question" : "Finish & Get Result"}
+                  {questionIndex < totalQuestions - 1 ? "Next Question" : "Finish & Get Result"}
                 </button>
+              )}
+
+              {/* Evaluating state */}
+              {isEvaluating && (
+                <div className="flex items-center gap-2 px-6 py-2.5 rounded-lg bg-accent/10 text-accent text-sm font-semibold">
+                  <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                  </svg>
+                  Evaluating...
+                </div>
               )}
             </div>
           </div>
         </div>
       </div>
+
+      {/* Evaluation loading overlay */}
+      {isEvaluating && (
+        <div className="fixed inset-0 z-50 bg-white/80 backdrop-blur-sm flex flex-col items-center justify-center">
+          <svg className="w-12 h-12 text-accent animate-spin" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+          </svg>
+          <p className="font-heading text-lg font-semibold text-foreground mt-6">
+            Analysing your answers...
+          </p>
+          <p className="text-sm text-muted-foreground mt-2">
+            The AI is evaluating your responses and preparing feedback.
+          </p>
+        </div>
+      )}
     </div>
   );
 }
