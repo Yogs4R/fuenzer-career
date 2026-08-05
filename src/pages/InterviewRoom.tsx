@@ -76,9 +76,9 @@ export default function InterviewRoom() {
   const [currentTranscript, setCurrentTranscript] = useState("");
   const [currentFillerCount, setCurrentFillerCount] = useState(0);
 
-  /* Fallback textarea (mic unavailable) */
+  /* Input mode: mic (voice) or text (typing) */
+  const [inputMode, setInputMode] = useState<"mic" | "text">("mic");
   const [micError, setMicError] = useState<string | null>(null);
-  const [useTextarea, setUseTextarea] = useState(false);
   const [textAnswer, setTextAnswer] = useState("");
 
   /* Evaluation */
@@ -126,7 +126,7 @@ export default function InterviewRoom() {
     setCurrentTranscript("");
     setCurrentFillerCount(0);
     setMicError(null);
-    setUseTextarea(false);
+    setInputMode("mic");
     setTextAnswer("");
     setHasRecording(false);
     setElapsed(0);
@@ -251,7 +251,7 @@ export default function InterviewRoom() {
         const msg = err instanceof Error ? err.message : "Failed to start";
         setMicError(`Voice service temporarily unavailable — ${msg}. Type your answer instead.`);
       }
-      setUseTextarea(true);
+      setInputMode("text");
       setHasRecording(true);
     }
   }, [session, resetPerQuestion, cleanupAll, startVisualiser]);
@@ -292,7 +292,7 @@ export default function InterviewRoom() {
   }, []);
 
   const toggleRecording = () => {
-    if (micState === "idle" && !useTextarea) {
+    if (micState === "idle" && inputMode === "mic") {
       startRecording();
     } else if (micState === "recording") {
       stopRecording();
@@ -301,9 +301,10 @@ export default function InterviewRoom() {
 
   /* ── Submit current answer and advance / finish ── */
   const submitCurrentAnswer = useCallback(() => {
-    const answerText = useTextarea ? textAnswer.trim() : currentTranscript.trim();
-    const fillerCount = useTextarea ? 0 : currentFillerCount;
-    const fillerWords: string[] = useTextarea
+    const isText = inputMode === "text";
+    const answerText = isText ? textAnswer.trim() : currentTranscript.trim();
+    const fillerCount = isText ? 0 : currentFillerCount;
+    const fillerWords: string[] = isText
       ? []
       : [...currentFillerWordsRef.current];
 
@@ -313,7 +314,7 @@ export default function InterviewRoom() {
       fillerCount,
       fillerWords,
     });
-  }, [useTextarea, textAnswer, currentTranscript, currentFillerCount, addAnswer, questions, questionIndex]);
+  }, [inputMode, textAnswer, currentTranscript, currentFillerCount, addAnswer, questions, questionIndex]);
 
   const handleFinishEvaluation = useCallback(async () => {
     if (isEvaluating) return;
@@ -355,7 +356,7 @@ export default function InterviewRoom() {
 
   const handleSkip = useCallback(() => {
     /* Add empty answer for skipped question */
-    if (!useTextarea && !hasRecording) {
+    if (inputMode === "mic" && !hasRecording) {
       addAnswer({
         question: questions[questionIndex],
         answer: "[Skipped]",
@@ -369,17 +370,19 @@ export default function InterviewRoom() {
     } else {
       handleFinishEvaluation();
     }
-  }, [questionIndex, totalQuestions, resetPerQuestion, addAnswer, questions, useTextarea, hasRecording, handleFinishEvaluation]);
+  }, [questionIndex, totalQuestions, resetPerQuestion, addAnswer, questions, inputMode, hasRecording, handleFinishEvaluation]);
 
   const handleRetry = useCallback(() => {
-    /* If in textarea mode with text, keep it */
-    if (useTextarea) {
+    /* If in text mode, clear and switch back to mic */
+    if (inputMode === "text") {
+      setInputMode("mic");
+      setTextAnswer("");
       setHasRecording(false);
       setMicState("idle");
       return;
     }
     resetPerQuestion();
-  }, [useTextarea, resetPerQuestion]);
+  }, [inputMode, resetPerQuestion]);
 
   /* ── Fetch AI-generated STAR hint for the current question ── */
   const fetchHint = useCallback(async (question: string) => {
@@ -439,13 +442,13 @@ export default function InterviewRoom() {
       case "processing":
         return "bg-accent/10 text-accent border-2 border-accent shadow-md";
       default:
-        if (useTextarea) return "bg-muted border-2 border-border text-muted-foreground opacity-50 cursor-not-allowed";
+        if (inputMode !== "mic") return "bg-muted border-2 border-border text-muted-foreground opacity-50 cursor-not-allowed";
         return "bg-white border-2 border-border text-muted-foreground hover:border-accent hover:text-accent shadow-md";
     }
   };
 
   const getStatusText = () => {
-    if (useTextarea && !micError) return { text: "Type your answer below", color: "text-muted-foreground" };
+    if (inputMode === "text" && !micError) return { text: "Type your answer below", color: "text-muted-foreground" };
     if (micError) return { text: micError, color: "text-amber-600" };
     switch (micState) {
       case "recording":
@@ -467,7 +470,7 @@ export default function InterviewRoom() {
             <svg className="w-4 h-4 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
             </svg>
-            <span>Mock Interview</span>
+            <span>Interview Practice</span>
           </div>
           <span className="text-xs font-medium text-muted-foreground bg-muted px-2.5 py-1 rounded-full">
             Question {questionIndex + 1} of {totalQuestions}
@@ -490,7 +493,9 @@ export default function InterviewRoom() {
               {questions[questionIndex]}
             </p>
             <p className="mt-4 text-sm text-muted-foreground border-t border-border pt-4">
-              Take a moment to gather your thoughts, then press the microphone and speak your answer clearly.
+              {inputMode === "mic"
+                ? "Take a moment to gather your thoughts, then press the microphone and speak your answer clearly."
+                : "Take a moment to gather your thoughts, then type your answer below."}
             </p>
 
             {/* Live partial transcript during recording */}
@@ -502,7 +507,7 @@ export default function InterviewRoom() {
             )}
 
             {/* Final transcript after stop */}
-            {hasRecording && !useTextarea && micState !== "recording" && micState !== "processing" && currentTranscript && (
+            {hasRecording && inputMode === "mic" && micState !== "recording" && micState !== "processing" && currentTranscript && (
               <div className="mt-4 p-3 rounded-lg bg-accent/5 border border-accent/10">
                 <p className="text-xs text-accent font-medium mb-1">
                   Your answer ({currentFillerCount} filler word{currentFillerCount !== 1 ? "s" : ""})
@@ -521,8 +526,8 @@ export default function InterviewRoom() {
               </div>
             )}
 
-            {/* Textarea fallback when mic unavailable */}
-            {useTextarea && (
+            {/* Textarea for typing answers */}
+            {inputMode === "text" && (
               <div className="mt-4">
                 <label htmlFor="text-answer" className="block text-sm font-medium text-foreground mb-2">
                   Type your answer
@@ -642,7 +647,7 @@ export default function InterviewRoom() {
             {/* Microphone Button */}
             <button
               onClick={toggleRecording}
-              disabled={useTextarea}
+              disabled={inputMode !== "mic"}
               className={`btn-active w-20 h-20 sm:w-24 sm:h-24 rounded-full flex items-center justify-center transition-all duration-200 relative cursor-pointer ${getMicButtonClasses()}`}
               aria-label={
                 micState === "recording"
@@ -685,10 +690,43 @@ export default function InterviewRoom() {
               )}
             </div>
 
+            {/* Mode toggle: switch between mic and text */}
+            {micState === "idle" && !isEvaluating && (
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => {
+                    cleanupAll();
+                    setInputMode(inputMode === "mic" ? "text" : "mic");
+                    setHasRecording(false);
+                    setMicState("idle");
+                    setTextAnswer("");
+                  }}
+                  className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-accent cursor-pointer transition-colors duration-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring rounded"
+                >
+                  {inputMode === "mic" ? (
+                    <>
+                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M3 5h12M9 3v2m0 4a3 3 0 110 6 3 3 0 010-6zm7 4v2m0 4h.01" />
+                      </svg>
+                      Type instead
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 18.5a4.5 4.5 0 004.5-4.5v-6a4.5 4.5 0 00-9 0v6a4.5 4.5 0 004.5 4.5z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 10v4a7 7 0 01-14 0v-4" />
+                      </svg>
+                      Use microphone
+                    </>
+                  )}
+                </button>
+              </div>
+            )}
+
             {/* Action buttons row */}
             <div className="flex items-center gap-4 mt-2">
               {/* Skip button (visible when idle and not recorded) */}
-              {micState === "idle" && !hasRecording && !useTextarea && (
+              {micState === "idle" && !hasRecording && inputMode === "mic" && (
                 <button
                   onClick={handleSkip}
                   className="btn-active px-6 py-2.5 rounded-lg font-semibold text-sm cursor-pointer transition-all duration-200 border-2 border-border text-muted-foreground hover:border-accent hover:text-accent hover:-translate-y-0.5"
@@ -713,7 +751,7 @@ export default function InterviewRoom() {
               )}
 
               {/* Next / Finish button — in textarea mode, require non-empty text */}
-              {hasRecording && !isEvaluating && (!useTextarea || textAnswer.trim().length > 0) && (
+              {hasRecording && !isEvaluating && (inputMode === "mic" || textAnswer.trim().length > 0) && (
                 <button
                   onClick={handleNext}
                   className="btn-active px-8 py-2.5 rounded-lg font-semibold text-sm shadow-md cursor-pointer transition-all duration-200 bg-primary hover:bg-primary/90 text-white hover:-translate-y-0.5"
