@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { handleSectionLink } from "../lib/sectionLink";
-import { useInterviewSession } from "../lib/InterviewSession";
+import { useInterviewSession, getGuestHistory, type GuestHistoryItem } from "../lib/InterviewSession";
 import { useAuth } from "../lib/AuthContext";
 import { supabase } from "../lib/supabaseClient";
 
@@ -162,7 +162,11 @@ export default function NavBar() {
   const [loadingNotifs, setLoadingNotifs] = useState(false);
 
   const fetchHistory = useCallback(async () => {
-    if (!user) { setHistoryItems([]); return; }
+    if (!user) {
+      /* Guest: read from localStorage */
+      setHistoryItems(getGuestHistory());
+      return;
+    }
     setLoadingHistory(true);
     try {
       const { data, error } = await supabase.from("interview_history")
@@ -383,20 +387,49 @@ export default function NavBar() {
           </div>
         ) : (
           <ul className="space-y-2">
-            {paginatedHistory.map((item) => (
-              <li key={item.id} role="button" tabIndex={0}
-                onClick={() => { setHistoryOpen(false); navigate(`/report?id=${item.id}`); }}
-                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setHistoryOpen(false); navigate(`/report?id=${item.id}`); } }}
-                className="flex items-center justify-between p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors cursor-pointer">
-                <div>
-                  <p className="text-sm font-medium text-foreground">{item.role}</p>
-                  <p className="text-xs text-gray-600">{new Date(item.created_at).toLocaleDateString()}</p>
-                </div>
-                <span className={`text-sm font-bold ${item.overall_score >= 75 ? "text-green-600" : item.overall_score >= 50 ? "text-amber-600" : "text-destructive"}`}>
-                  {item.overall_score}%
-                </span>
-              </li>
-            ))}
+            {paginatedHistory.map((item) => {
+              const isGuest = item.id.startsWith("guest_");
+              return (
+                <li key={item.id}
+                  onClick={() => {
+                    if (isGuest) return; /* Guest items not backed by DB */
+                    setHistoryOpen(false);
+                    navigate(`/report?id=${item.id}`);
+                  }}
+                  onKeyDown={(e) => {
+                    if (isGuest) return;
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      setHistoryOpen(false);
+                      navigate(`/report?id=${item.id}`);
+                    }
+                  }}
+                  className={`flex items-center justify-between p-3 rounded-lg transition-colors ${
+                    isGuest
+                      ? "bg-muted/30 cursor-default"
+                      : "bg-muted/50 hover:bg-muted cursor-pointer"
+                  }`}
+                  tabIndex={isGuest ? -1 : 0}
+                >
+                  <div>
+                    <p className={`text-sm font-medium ${isGuest ? "text-muted-foreground" : "text-foreground"}`}>
+                      {item.role}
+                    </p>
+                    <p className="text-xs text-gray-600">
+                      {new Date(item.created_at).toLocaleDateString()}
+                      {isGuest && (
+                        <span className="ml-2 text-[10px] uppercase tracking-wider text-accent font-semibold">
+                          Guest
+                        </span>
+                      )}
+                    </p>
+                  </div>
+                  <span className={`text-sm font-bold ${item.overall_score >= 75 ? "text-green-600" : item.overall_score >= 50 ? "text-amber-600" : "text-destructive"}`}>
+                    {item.overall_score}%
+                  </span>
+                </li>
+              );
+            })}
           </ul>
         )}
       </ModalOverlay>

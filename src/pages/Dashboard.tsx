@@ -277,7 +277,7 @@ export default function Dashboard() {
   /* ── Rate limiter: prevent rapid re-clicks ── */
   const lastCallRef = useRef(0);
   const CALL_COOLDOWN_MS = 10_000; // 10 seconds between calls
-  const FETCH_TIMEOUT_MS = 25_000; // 25 seconds max for market research
+  const FETCH_TIMEOUT_MS = 15_000; // 15 seconds max for market research
   const FETCH_TIMEOUT_MS_PREP = 15_000; // 15 seconds for question generation
 
   /* ── Step 1: Market Research ── */
@@ -455,9 +455,9 @@ export default function Dashboard() {
               : "Agent is generating interview questions…"}
           </p>
           <p className="text-xs sm:text-sm text-muted-foreground mt-2">
-            {loadingElapsed < 10
+            {loadingElapsed < 8
               ? "This will only take a moment."
-              : "Still working on it — hang tight! This can take up to 25 seconds."}
+              : "Still working — this can take up to 15 seconds."}
           </p>
         </div>
       )}

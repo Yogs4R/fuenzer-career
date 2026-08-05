@@ -1,48 +1,48 @@
 /**
- * Audio pipeline: getUserMedia → AudioContext → PCM Int16 at 16 kHz.
+ * Audio pipeline — PCM Int16 at 16 kHz.
  *
- * Returns a function the caller uses to wire the source into a WebSocket
- * (or any other writable sink) and a cleanup function to tear it all down.
+ * Designed to work with a *single* existing AudioContext and media stream
+ * (no duplicate getUserMedia calls), which is critical for Bluetooth / TWS
+ * headsets where multiple AudioContexts cause resource contention.
  */
 
 export interface AudioCapture {
   /** Start capturing and feeding PCM binary to the given callback. */
-  start: (onChunk: (data: ArrayBuffer) => void) => Promise<void>;
-  /** Stop the audio context, media stream, and processor. */
+  start: (onChunk: (data: ArrayBuffer) => void) => void;
+  /** Stop the processor. */
   stop: () => void;
 }
 
 /**
  * Create an AudioCapture that emits 16 kHz PCM S16LE chunks.
- * Each chunk is ~100 ms of audio (3200 bytes at 16 kHz, 16-bit mono).
+ *
+ * Unlike the previous version this does NOT call getUserMedia() or create
+ * its own AudioContext — it expects a pre-existing stream + AudioContext
+ * so there is only ONE audio pipeline in the app.
+ *
+ * Each chunk is ~32 ms of audio (1024 samples at 16 kHz, 16-bit mono).
  */
-export function createAudioCapture(): AudioCapture {
-  let audioCtx: AudioContext | null = null;
-  let stream: MediaStream | null = null;
-  let source: MediaStreamAudioSourceNode | null = null;
+export function createAudioCapture(
+  audioCtx: AudioContext,
+  source: MediaStreamAudioSourceNode,
+): AudioCapture {
   let processor: ScriptProcessorNode | null = null;
 
+  /* For browsers that support it, prefer AudioWorklet — but we ship a
+     backwards-compatible ScriptProcessor fallback since AudioWorklet
+     requires a separate JS file loaded as a blob. */
   return {
-    async start(onChunk: (data: ArrayBuffer) => void) {
-      stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-
-      /* The Speechmatics RT endpoint wants 16 kHz PCM S16LE.
-         We request 16 kHz from the browser. */
-      const sampleRate = 16000;
-      audioCtx = new AudioContext({ sampleRate });
-
-      source = audioCtx.createMediaStreamSource(stream);
-
-      /* ScriptProcessorNode is deprecated but still works cross-browser
-         and is simpler than AudioWorklet for this use-case.
-         bufferSize 512 → ~32 ms at 16 kHz, good latency. */
-      processor = audioCtx.createScriptProcessor(512, 1, 1);
+    start(onChunk: (data: ArrayBuffer) => void) {
+      /* Use ScriptProcessorNode with bufferSize 1024 → ~64 ms at 16 kHz.
+         The browser deprecation warning is cosmetic — the API still works. */
+      processor = audioCtx.createScriptProcessor(1024, 1, 1);
 
       source.connect(processor);
-      processor.connect(audioCtx.destination);
+      /* Do NOT connect to destination — that creates a feedback loop and
+         interferes with TWS / Bluetooth headsets. */
 
-      processor.onaudioprocess = (event) => {
-        const input = event.inputBuffer.getChannelData(0); // Float32 Array
+      processor.onaudioprocess = (event: AudioProcessingEvent) => {
+        const input = event.inputBuffer.getChannelData(0); // Float32  [-1, 1]
         const int16 = float32ToInt16(input);
         onChunk(int16.buffer as ArrayBuffer);
       };
@@ -50,20 +50,12 @@ export function createAudioCapture(): AudioCapture {
 
     stop() {
       if (processor) {
-        processor.disconnect();
+        try {
+          processor.disconnect();
+        } catch {
+          /* already disconnected */
+        }
         processor = null;
-      }
-      if (source) {
-        source.disconnect();
-        source = null;
-      }
-      if (audioCtx) {
-        audioCtx.close().catch(() => {});
-        audioCtx = null;
-      }
-      if (stream) {
-        stream.getTracks().forEach((t) => t.stop());
-        stream = null;
       }
     },
   };

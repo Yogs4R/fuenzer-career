@@ -17,6 +17,14 @@ import { useAuth } from "./AuthContext";
 
 /* ── Types ── */
 
+/** Minimal summary of a completed session, stored in localStorage for guests. */
+export interface GuestHistoryItem {
+  id: string;
+  role: string;
+  overall_score: number;
+  created_at: string;
+}
+
 export interface Keyword {
   name: string;
   count: number;
@@ -85,6 +93,7 @@ interface InterviewSessionContextValue {
 /* ── Default state ── */
 
 const STORAGE_KEY = "fuenzer_interview_session";
+const GUEST_HISTORY_KEY = "fuenzer_guest_history";
 
 const initialState: InterviewSessionState = {
   role: "",
@@ -123,6 +132,38 @@ function saveState(state: InterviewSessionState) {
 function clearState() {
   try {
     localStorage.removeItem(STORAGE_KEY);
+  } catch {
+    /* ignore */
+  }
+}
+
+/* ── Guest history helpers ── */
+
+export function getGuestHistory(): GuestHistoryItem[] {
+  try {
+    const raw = localStorage.getItem(GUEST_HISTORY_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch {
+    /* ignore */
+  }
+  return [];
+}
+
+export function addGuestSession(item: GuestHistoryItem) {
+  try {
+    const list = getGuestHistory();
+    list.unshift(item);
+    /* Keep max 50 entries */
+    if (list.length > 50) list.length = 50;
+    localStorage.setItem(GUEST_HISTORY_KEY, JSON.stringify(list));
+  } catch {
+    /* storage full — silently fail */
+  }
+}
+
+export function clearGuestHistory() {
+  try {
+    localStorage.removeItem(GUEST_HISTORY_KEY);
   } catch {
     /* ignore */
   }
@@ -227,7 +268,16 @@ export function InterviewSessionProvider({ children }: { children: ReactNode }) 
   const setEvaluation = useCallback((evaluation: EvaluationData) => {
     setSession((prev) => {
       const next = { ...prev, evaluation };
-      if (!prevUserRef.current) saveState(next);
+      if (!prevUserRef.current) {
+        saveState(next);
+        /* Save to guest history so the NavBar history modal can show it */
+        addGuestSession({
+          id: `guest_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+          role: prev.role || "Unknown",
+          overall_score: evaluation.overallScore ?? 0,
+          created_at: new Date().toISOString(),
+        });
+      }
       return next;
     });
   }, []);

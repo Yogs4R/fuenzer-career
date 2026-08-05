@@ -98,7 +98,7 @@ export default function InterviewRoom() {
   const streamRef = useRef<MediaStream | null>(null);
   const animFrameRef = useRef<number>(0);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const audioCaptureRef = useRef<ReturnType<typeof createAudioCapture> | null>(null);
+  const audioCaptureRef = useRef<AudioCapture | null>(null);
   const smSessionRef = useRef<SpeechmaticsSession | null>(null);
   const queueRef = useRef<AudioChunkQueue | null>(null);
   /* Track latest answers in a ref so async callbacks never use stale values */
@@ -205,8 +205,9 @@ export default function InterviewRoom() {
       /* 4. Visualiser */
       startVisualiser();
 
-      /* 5. Audio capture + chunk queue */
-      const capture = createAudioCapture();
+      /* 5. Audio capture — uses the SAME AudioContext and source as the
+           visualizer (no duplicate getUserMedia), critical for TWS/Bluetooth. */
+      const capture = createAudioCapture(audioCtx, source);
       audioCaptureRef.current = capture;
       const queue = new AudioChunkQueue();
       queueRef.current = queue;
