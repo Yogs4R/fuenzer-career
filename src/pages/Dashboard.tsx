@@ -685,7 +685,7 @@ export default function Dashboard() {
                 <div>
                   <p className="text-sm font-semibold text-foreground">Practise makes progress</p>
                   <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
-                    Type or select your target role above and click &quot;Start Target Research&quot; to begin a mock interview simulation. No account needed.
+                    Type or select your target role above and click &quot;Start Target Research&quot; to begin an interview simulation.
                   </p>
                 </div>
               </div>

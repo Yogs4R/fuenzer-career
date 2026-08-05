@@ -179,6 +179,38 @@ export function clearGuestHistory() {
   }
 }
 
+/** Store the full guest session data under a key derived from the session id. */
+export function saveGuestSessionData(id: string, data: {
+  role: string;
+  questions: string[];
+  answers: QuestionAnswer[];
+  evaluation: EvaluationData;
+  keywords: { name: string; count: number }[];
+}) {
+  try {
+    localStorage.setItem(`fuenzer_guest_session_${id}`, JSON.stringify(data));
+  } catch {
+    /* storage full — silently fail */
+  }
+}
+
+/** Retrieve a specific guest session's full data by id. */
+export function loadGuestSessionData(id: string): {
+  role: string;
+  questions: string[];
+  answers: QuestionAnswer[];
+  evaluation: EvaluationData;
+  keywords: { name: string; count: number }[];
+} | null {
+  try {
+    const raw = localStorage.getItem(`fuenzer_guest_session_${id}`);
+    if (raw) return JSON.parse(raw);
+  } catch {
+    /* ignore */
+  }
+  return null;
+}
+
 /* ── Context ── */
 
 const InterviewSessionContext = createContext<InterviewSessionContextValue | null>(
@@ -280,12 +312,21 @@ export function InterviewSessionProvider({ children }: { children: ReactNode }) 
       const next = { ...prev, evaluation };
       if (!prevUserRef.current) {
         saveState(next);
+        const sessionId = `guest_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
         /* Save to guest history so the NavBar history modal can show it */
         addGuestSession({
-          id: `guest_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+          id: sessionId,
           role: prev.role || "Unknown",
           overall_score: evaluation.overallScore ?? 0,
           created_at: new Date().toISOString(),
+        });
+        /* Also save the full session data for later retrieval on the report page */
+        saveGuestSessionData(sessionId, {
+          role: prev.role || "Unknown",
+          questions: prev.questions,
+          answers: prev.answers,
+          evaluation,
+          keywords: prev.keywords,
         });
       }
       return next;

@@ -404,12 +404,10 @@ export default function NavBar() {
               return (
                 <li key={item.id}
                   onClick={() => {
-                    if (isGuest) return;
                     setHistoryOpen(false);
                     navigate(`/report?id=${item.id}`);
                   }}
                   onKeyDown={(e) => {
-                    if (isGuest) return;
                     if (e.key === "Enter" || e.key === " ") {
                       e.preventDefault();
                       setHistoryOpen(false);
@@ -418,10 +416,10 @@ export default function NavBar() {
                   }}
                   className={`flex items-center gap-2 p-3 rounded-lg transition-colors ${
                     isGuest
-                      ? "bg-muted/30 cursor-default"
+                      ? "bg-muted/30 hover:bg-muted cursor-pointer"
                       : "bg-muted/50 hover:bg-muted cursor-pointer"
                   }`}
-                  tabIndex={isGuest ? -1 : 0}
+                  tabIndex={0}
                 >
                   <button onClick={handleDelete}
                     className="shrink-0 p-1.5 rounded-md text-gray-400 hover:text-red-500 hover:bg-red-50 cursor-pointer transition-colors"

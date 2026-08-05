@@ -76,7 +76,7 @@ export async function startSpeechmaticsSession(
   additionalVocab?: string[],
 ): Promise<SpeechmaticsSession> {
   const token = await fetchToken();
-  const wsUrl = `wss://rt.speechmatics.com/v2?jwt=${token}`;
+  const wsUrl = `wss://eu.rt.speechmatics.com/v2?jwt=${token}`;
 
   const ws = new WebSocket(wsUrl);
 

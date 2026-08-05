@@ -1,6 +1,6 @@
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useEffect, useState } from "react";
-import { useInterviewSession, type QuestionAnswer, type EvaluationData } from "../lib/InterviewSession";
+import { useInterviewSession, type QuestionAnswer, type EvaluationData, loadGuestSessionData } from "../lib/InterviewSession";
 import { useAuth } from "../lib/AuthContext";
 import { supabase } from "../lib/supabaseClient";
 import { usePageTitle } from "../hooks/usePageTitle";
@@ -43,7 +43,7 @@ export default function EvaluationReport() {
   const [loadingHistorical, setLoadingHistorical] = useState(false);
   const [fetchError, setFetchError] = useState(false);
 
-  /* ── Fetch historical report from Supabase ── */
+  /* ── Fetch historical report from Supabase or guest localStorage ── */
   useEffect(() => {
     if (!reportId) return;
     let cancelled = false;
@@ -51,18 +51,49 @@ export default function EvaluationReport() {
     setFetchError(false);
     (async () => {
       try {
-        const { data, error } = await supabase
-          .from("interview_history")
-          .select("*")
-          .eq("id", reportId)
-          .single();
-        if (cancelled) return;
-        if (error) throw error;
-        setHistorical({
-          evaluation: data.evaluation as unknown as EvaluationData,
-          answers: data.answers as unknown as QuestionAnswer[],
-          role: data.role || "Unknown",
-        });
+        /* Guest sessions stored in localStorage */
+        if (reportId.startsWith("guest_")) {
+          const guestData = loadGuestSessionData(reportId);
+          if (guestData) {
+            setHistorical({
+              evaluation: guestData.evaluation,
+              answers: guestData.answers,
+              role: guestData.role || "Unknown",
+            });
+          } else {
+            /* Maybe it's the current/last session stored under the default key */
+            const curr = localStorage.getItem("fuenzer_interview_session");
+            if (curr) {
+              const parsed = JSON.parse(curr);
+              if (parsed.evaluation) {
+                setHistorical({
+                  evaluation: parsed.evaluation,
+                  answers: parsed.answers ?? [],
+                  role: parsed.role || "Unknown",
+                });
+              } else {
+                throw new Error("No guest data found");
+              }
+            } else {
+              throw new Error("No guest data found");
+            }
+          }
+          if (cancelled) return;
+        } else {
+          /* DB-backed session */
+          const { data, error } = await supabase
+            .from("interview_history")
+            .select("*")
+            .eq("id", reportId)
+            .single();
+          if (cancelled) return;
+          if (error) throw error;
+          setHistorical({
+            evaluation: data.evaluation as unknown as EvaluationData,
+            answers: data.answers as unknown as QuestionAnswer[],
+            role: data.role || "Unknown",
+          });
+        }
       } catch {
         if (!cancelled) setFetchError(true);
       } finally {
