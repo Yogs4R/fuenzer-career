@@ -1,6 +1,6 @@
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useEffect, useState } from "react";
-import { useInterviewSession } from "../lib/InterviewSession";
+import { useInterviewSession, type QuestionAnswer, type EvaluationData } from "../lib/InterviewSession";
 import { useAuth } from "../lib/AuthContext";
 import { supabase } from "../lib/supabaseClient";
 
@@ -25,29 +25,85 @@ function AnimatedBar({ score, delay }: { score: number; delay: number }) {
 
 export default function EvaluationReport() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const reportId = searchParams.get("id");
+  const isHistorical = !!reportId;
+
   const { session, reset } = useInterviewSession();
   const { user } = useAuth();
-  const { evaluation, answers } = session;
+
+  /* ── Historical report data state ── */
+  const [historical, setHistorical] = useState<{
+    evaluation: EvaluationData;
+    answers: QuestionAnswer[];
+    role: string;
+  } | null>(null);
+  const [loadingHistorical, setLoadingHistorical] = useState(false);
+  const [fetchError, setFetchError] = useState(false);
+
+  /* ── Fetch historical report from Supabase ── */
+  useEffect(() => {
+    if (!reportId) return;
+    let cancelled = false;
+    setLoadingHistorical(true);
+    setFetchError(false);
+    (async () => {
+      try {
+        const { data, error } = await supabase
+          .from("interview_history")
+          .select("*")
+          .eq("id", reportId)
+          .single();
+        if (cancelled) return;
+        if (error) throw error;
+        setHistorical({
+          evaluation: data.evaluation as unknown as EvaluationData,
+          answers: data.answers as unknown as QuestionAnswer[],
+          role: data.role || "Unknown",
+        });
+      } catch {
+        if (!cancelled) setFetchError(true);
+      } finally {
+        if (!cancelled) setLoadingHistorical(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [reportId]);
+
+  /* ── Decide effective data ── */
+  const evaluation: EvaluationData | null = isHistorical
+    ? historical?.evaluation ?? null
+    : session.evaluation;
+
+  const answers: QuestionAnswer[] = isHistorical
+    ? historical?.answers ?? []
+    : session.answers;
+
+  const effectiveRole: string = isHistorical
+    ? historical?.role ?? ""
+    : session.role;
 
   const [question, setQuestion] = useState(0);
   const [scoreVisible, setScoreVisible] = useState(false);
 
-  /* Redirect to landing if no evaluation data */
+  /* ── Redirect non-historical if no evaluation data ── */
   useEffect(() => {
-    if (!evaluation) {
+    if (!isHistorical && !session.evaluation) {
       navigate("/", { replace: true });
     }
-  }, [evaluation, navigate]);
+  }, [isHistorical, session.evaluation, navigate]);
 
   useEffect(() => {
     const timer = setTimeout(() => setScoreVisible(true), 200);
     return () => clearTimeout(timer);
   }, []);
 
-  /* ── Save to interview history if authenticated ── */
+  /* ── Save to interview history if authenticated (skip in historical mode) ── */
   const [saved, setSaved] = useState(false);
   useEffect(() => {
-    if (!evaluation || !user || saved) return;
+    if (isHistorical) return;
+    const evalToSave = session.evaluation;
+    if (!evalToSave || !user || saved) return;
     const saveHistory = async () => {
       try {
         await supabase.from("interview_history").insert({
@@ -56,8 +112,8 @@ export default function EvaluationReport() {
           keywords: session.keywords,
           questions: session.questions,
           answers: session.answers,
-          evaluation: evaluation,
-          overall_score: evaluation.overallScore || 0,
+          evaluation: evalToSave,
+          overall_score: evalToSave.overallScore || 0,
         });
         setSaved(true);
       } catch {
@@ -65,7 +121,45 @@ export default function EvaluationReport() {
       }
     };
     saveHistory();
-  }, [evaluation, user, saved, session]);
+  }, [isHistorical, session, user, saved]);
+
+  /* ── Loading state ── */
+  if (isHistorical && loadingHistorical) {
+    return (
+      <div className="min-h-[calc(100vh-3.5rem)] bg-background flex items-center justify-center">
+        <div className="text-center">
+          <svg className="w-8 h-8 text-accent animate-spin mx-auto mb-3" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+          </svg>
+          <p className="text-sm text-muted-foreground">Loading report...</p>
+        </div>
+      </div>
+    );
+  }
+
+  /* ── Error state ── */
+  if (isHistorical && fetchError) {
+    return (
+      <div className="min-h-[calc(100vh-3.5rem)] bg-background flex items-center justify-center px-4">
+        <div className="text-center max-w-sm">
+          <svg className="w-12 h-12 text-destructive/60 mx-auto mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+          </svg>
+          <h2 className="font-heading text-lg font-semibold text-foreground mb-2">Report Not Found</h2>
+          <p className="text-sm text-muted-foreground mb-4">
+            We couldn't find that report. It may have been removed or you may not have permission to view it.
+          </p>
+          <button
+            onClick={() => navigate("/")}
+            className="px-6 py-2 rounded-lg bg-primary hover:bg-primary/90 text-white font-semibold text-sm cursor-pointer transition-colors"
+          >
+            Go to Dashboard
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (!evaluation) return null;
 
@@ -120,7 +214,7 @@ export default function EvaluationReport() {
           </div>
           <h1 className="font-heading text-3xl sm:text-4xl font-bold text-foreground">Your Interview Dashboard</h1>
           <p className="mt-2 text-sm sm:text-base text-muted-foreground">
-            Detailed breakdown of your{session.role ? ` ${session.role}` : ""} mock interview performance.
+            Detailed breakdown of your{effectiveRole ? ` ${effectiveRole}` : ""} mock interview performance.
           </p>
         </div>
 

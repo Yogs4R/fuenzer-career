@@ -384,7 +384,10 @@ export default function NavBar() {
         ) : (
           <ul className="space-y-2">
             {paginatedHistory.map((item) => (
-              <li key={item.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors">
+              <li key={item.id} role="button" tabIndex={0}
+                onClick={() => { setHistoryOpen(false); navigate(`/report?id=${item.id}`); }}
+                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setHistoryOpen(false); navigate(`/report?id=${item.id}`); } }}
+                className="flex items-center justify-between p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors cursor-pointer">
                 <div>
                   <p className="text-sm font-medium text-foreground">{item.role}</p>
                   <p className="text-xs text-gray-600">{new Date(item.created_at).toLocaleDateString()}</p>
