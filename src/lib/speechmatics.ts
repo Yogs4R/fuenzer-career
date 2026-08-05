@@ -97,7 +97,7 @@ export async function startSpeechmaticsSession(
         streamEnded = true;
         try {
           if (ws.readyState === WebSocket.OPEN) {
-            ws.send(JSON.stringify({ message: "SetRecognitionConfig", end_of_stream: "end_of_stream" }));
+            ws.send(JSON.stringify({ message: "EndOfStream" }));
           }
         } catch {
           /* socket already closing */
@@ -124,7 +124,9 @@ export async function startSpeechmaticsSession(
   };
 
   ws.onopen = () => {
-    /* Audio format message */
+    /* StartRecognition payload — use "auto" for language so Speechmatics
+       detects the spoken language automatically (the evaluator handles
+       whichever language Speechmatics transcribes). */
     const startRecognition: Record<string, unknown> = {
       message: "StartRecognition",
       audio_format: {
@@ -133,7 +135,7 @@ export async function startSpeechmaticsSession(
         sample_rate: 16000,
       },
       transcription_config: {
-        language,
+        language: "auto",
         max_delay: 2,
         enable_partials: true,
         additional_vocab: additionalVocab ?? [],
@@ -149,10 +151,11 @@ export async function startSpeechmaticsSession(
         }
       }
       streamEnded = true;
-      /* Signal end-of-audio (the user stopped speaking). The server
-         will flush remaining audio and send an EndOfTranscript. */
+      /* Send a separate EndOfStream message (not inside a config object).
+         Speechmatics rejects any payload with an "end_of_stream" field
+         inside SetRecognitionConfig — it must be its own message. */
       if (ws.readyState === WebSocket.OPEN) {
-        ws.send(JSON.stringify({ message: "SetRecognitionConfig", end_of_stream: "end_of_stream" }));
+        ws.send(JSON.stringify({ message: "EndOfStream" }));
       }
     })();
   };
