@@ -280,7 +280,9 @@ export default function Dashboard() {
   const FETCH_TIMEOUT_MS = 30_000; // 30 seconds for market agent (Bright Data has its own rate limit)
   const FETCH_TIMEOUT_MS_PREP = 30_000; // 30 seconds for question generation
 
-  /* ── Rate limiter: only for question generation (interview-prep) ── */
+  /* ── Rate limiters ── */
+  const marketCallRef = useRef(0);
+  const MARKET_COOLDOWN_MS = 15_000; // 15 seconds between market-research calls (Bright Data costs credits)
   const prepCallRef = useRef(0);
   const PREP_COOLDOWN_MS = 20_000; // 20 seconds between question-gen calls
 
@@ -289,6 +291,15 @@ export default function Dashboard() {
     if (step !== "idle") return;
     const role = heroRole.trim();
     if (!role) return;
+
+    /* Rate limiter — prevent rapid market-research calls (Bright Data costs credits) */
+    const now = Date.now();
+    if (now - marketCallRef.current < MARKET_COOLDOWN_MS) {
+      const remaining = Math.ceil((MARKET_COOLDOWN_MS - (now - marketCallRef.current)) / 1000);
+      setMarketError(`Please wait ${remaining} second${remaining > 1 ? "s" : ""} before searching again.`);
+      return;
+    }
+    marketCallRef.current = now;
 
     reset();
     setRole(role);
