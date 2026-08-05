@@ -190,8 +190,8 @@ export default function NavBar() {
   }, [user]);
 
   const openHistory = useCallback(() => {
-    setHistoryPage(1); setHistoryOpen(true); if (user) fetchHistory();
-  }, [user, fetchHistory]);
+    setHistoryPage(1); setHistoryOpen(true); fetchHistory();
+  }, [fetchHistory]);
 
   const openNotif = useCallback(() => {
     setNotifPage(1); setExpandedNotif(null); setNotifOpen(true); if (user) fetchNotifications();
