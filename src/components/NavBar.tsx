@@ -220,8 +220,32 @@ export default function NavBar() {
   return (
     <nav className="bg-primary text-on-primary shadow-md sticky top-0 z-50">
       <div className="w-full px-2 sm:px-4 lg:px-6 h-14 flex items-center gap-1 sm:gap-2 relative">
-        {/* Desktop nav links — on the left of the logo */}
-        <div className="hidden sm:flex items-center gap-3 lg:gap-5">
+        {/* Hamburger (mobile only) */}
+        <button
+          onClick={() => setMobileOpen((p) => !p)}
+          className="sm:hidden p-1.5 rounded-md text-white/80 hover:text-white hover:bg-white/10 cursor-pointer transition-all duration-200"
+          aria-label={mobileOpen ? "Close navigation menu" : "Open navigation menu"}
+          aria-expanded={mobileOpen}
+        >
+          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            {mobileOpen ? (
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            ) : (
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+            )}
+          </svg>
+        </button>
+
+        {/* Logo */}
+        <Link
+          to="/"
+          className="font-heading text-sm sm:text-lg md:text-xl font-semibold tracking-tight cursor-pointer transition-opacity duration-200 hover:opacity-90 whitespace-nowrap"
+        >
+          Fuenzer Career
+        </Link>
+
+        {/* Desktop nav links — centered in the navbar */}
+        <div className="hidden sm:flex items-center justify-center flex-1 gap-3 lg:gap-5">
           <a
             href="/#trending"
             onClick={(e) => handleSectionLink(e, "trending", navigate)}
@@ -252,35 +276,8 @@ export default function NavBar() {
           </a>
         </div>
 
-        {/* Logo */}
-        <Link
-          to="/"
-          className="font-heading text-sm sm:text-lg md:text-xl font-semibold tracking-tight cursor-pointer transition-opacity duration-200 hover:opacity-90 whitespace-nowrap"
-        >
-          Fuenzer Career
-        </Link>
-
-        {/* Spacer */}
-        <div className="flex-1" />
-
         {/* Right: icons + controls */}
         <div className="flex items-center gap-1 sm:gap-2 text-sm font-medium text-white/80">
-          {/* Hamburger (mobile only) — now on the right of logo */}
-          <button
-            onClick={() => setMobileOpen((p) => !p)}
-            className="sm:hidden p-1.5 rounded-md text-white/80 hover:text-white hover:bg-white/10 cursor-pointer transition-all duration-200"
-            aria-label={mobileOpen ? "Close navigation menu" : "Open navigation menu"}
-            aria-expanded={mobileOpen}
-          >
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              {mobileOpen ? (
-                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-              ) : (
-                <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
-              )}
-            </svg>
-          </button>
-
           {/* History icon — hidden on mobile */}
           <button
             onClick={openHistory}

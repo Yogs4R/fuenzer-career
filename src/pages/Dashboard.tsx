@@ -2,28 +2,31 @@ import { useState, useEffect } from "react";
 import { useNavigate, Link, useLocation } from "react-router-dom";
 import RoleCombobox from "../components/RoleCombobox";
 import { handleSectionLink } from "../lib/sectionLink";
+import { supabase } from "../lib/supabaseClient";
+import { useInterviewSession } from "../lib/InterviewSession";
 
-const trendingSkills = [
-  { name: "React", growth: "+24%" },
-  { name: "TypeScript", growth: "+18%" },
-  { name: "Python", growth: "+32%" },
-  { name: "Node.js", growth: "+15%" },
-  { name: "AWS", growth: "+12%" },
-  { name: "SQL", growth: "+8%" },
-  { name: "Docker", growth: "+21%" },
-  { name: "Git", growth: "+5%" },
-  { name: "Agile", growth: "+7%" },
-  { name: "API Integration", growth: "+19%" },
-  { name: "React", growth: "+24%" },
-  { name: "TypeScript", growth: "+18%" },
-  { name: "Python", growth: "+32%" },
-  { name: "Node.js", growth: "+15%" },
-  { name: "AWS", growth: "+12%" },
-  { name: "SQL", growth: "+8%" },
-  { name: "Docker", growth: "+21%" },
-  { name: "Git", growth: "+5%" },
-  { name: "Agile", growth: "+7%" },
-  { name: "API Integration", growth: "+19%" },
+/* ── Fallback skills (used when market-agent fails) ── */
+const fallbackSkills = [
+  { name: "React", count: 85 },
+  { name: "TypeScript", count: 72 },
+  { name: "Python", count: 78 },
+  { name: "Node.js", count: 65 },
+  { name: "AWS", count: 60 },
+  { name: "SQL", count: 55 },
+  { name: "Docker", count: 58 },
+  { name: "Git", count: 50 },
+  { name: "Agile", count: 45 },
+  { name: "API Integration", count: 52 },
+  { name: "React", count: 85 },
+  { name: "TypeScript", count: 72 },
+  { name: "Python", count: 78 },
+  { name: "Node.js", count: 65 },
+  { name: "AWS", count: 60 },
+  { name: "SQL", count: 55 },
+  { name: "Docker", count: 58 },
+  { name: "Git", count: 50 },
+  { name: "Agile", count: 45 },
+  { name: "API Integration", count: 52 },
 ];
 
 const faqItems = [
@@ -116,16 +119,24 @@ const agents = [
   },
 ];
 
+type DashboardStep = "idle" | "loading_market" | "keyword_selection" | "loading_prep" | "done";
+
 export default function Dashboard() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { session, setRole, setKeywords, setQuestions, setError, reset } =
+    useInterviewSession();
 
   const [heroRole, setHeroRole] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
+  const [step, setStep] = useState<DashboardStep>("idle");
+  const [selectedKeywords, setSelectedKeywords] = useState<Set<string>>(new Set());
+  const [liveKeywords, setLiveKeywords] = useState<{ name: string; count: number }[]>([]);
+  const [marketError, setMarketError] = useState<string | null>(null);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const [testimonialIndex, setTestimonialIndex] = useState(0);
+  const [autoRotate, setAutoRotate] = useState(true);
 
-  /* Scroll to hash target after navigation (handles /#trending etc. from other routes) */
+  /* Scroll to hash target after navigation */
   useEffect(() => {
     if (!location.hash) return;
     const id = location.hash.slice(1);
@@ -136,22 +147,14 @@ export default function Dashboard() {
     }
   }, [location.hash]);
 
-  const handleStart = () => {
-    if (isLoading) return;
-    setIsLoading(true);
-    setTimeout(() => {
-      setIsLoading(false);
-      navigate("/interview", { state: { role: heroRole } });
-    }, 2000);
-  };
-
-  /* Auto-rotate testimonials every 5 seconds */
-  const [autoRotate, setAutoRotate] = useState(true);
-  setTimeout(() => {
-    if (autoRotate) {
+  /* Auto-rotate testimonials */
+  useEffect(() => {
+    if (!autoRotate) return;
+    const t = setInterval(() => {
       setTestimonialIndex((p) => (p + 1) % testimonials.length);
-    }
-  }, 5000);
+    }, 5000);
+    return () => clearInterval(t);
+  }, [autoRotate]);
 
   const nextTestimonial = () => {
     setAutoRotate(false);
@@ -161,6 +164,99 @@ export default function Dashboard() {
     setAutoRotate(false);
     setTestimonialIndex((p) => (p - 1 + testimonials.length) % testimonials.length);
   };
+
+  /* ── Step 1: Market Research ── */
+  const handleStart = async () => {
+    if (step !== "idle") return;
+    const role = heroRole.trim();
+    if (!role) return;
+
+    reset();
+    setRole(role);
+    setStep("loading_market");
+    setMarketError(null);
+
+    try {
+      const { data, error } = await supabase.functions.invoke<{
+        keywords: { name: string; count: number }[];
+        error?: string;
+      }>("market-agent", {
+        body: { role, language: session.language || "en" },
+      });
+
+      if (error) throw new Error(error.message);
+
+      if (data?.keywords && data.keywords.length > 0) {
+        setLiveKeywords(data.keywords);
+        setKeywords(data.keywords);
+        setSelectedKeywords(new Set(data.keywords.slice(0, 5).map((k) => k.name)));
+      } else {
+        const fallback = fallbackSkills.slice(0, 10).map((s, i) => ({ name: s.name, count: 100 - i * 5 }));
+        setLiveKeywords(fallback);
+        setKeywords(fallback);
+        if (data?.error) setMarketError(data.error);
+      }
+      setStep("keyword_selection");
+    } catch {
+      setMarketError("Live data temporarily unavailable. Using general skills.");
+      const fallback = fallbackSkills.slice(0, 10).map((s, i) => ({ name: s.name, count: 100 - i * 5 }));
+      setLiveKeywords(fallback);
+      setKeywords(fallback);
+      setSelectedKeywords(new Set(fallback.slice(0, 5).map((s) => s.name)));
+      setStep("keyword_selection");
+    }
+  };
+
+  const toggleKeyword = (name: string) => {
+    setSelectedKeywords((prev) => {
+      const next = new Set(prev);
+      if (next.has(name)) next.delete(name);
+      else next.add(name);
+      return next;
+    });
+  };
+
+  /* ── Step 2: Generate questions ── */
+  const handleConfirmKeywords = async () => {
+    if (step !== "keyword_selection") return;
+    const chosenKeywords = liveKeywords.filter((k) => selectedKeywords.has(k.name));
+    setStep("loading_prep");
+
+    try {
+      const { data, error } = await supabase.functions.invoke<{
+        questions: string[];
+      }>("interview-prep", {
+        body: {
+          role: session.role,
+          language: session.language || "en",
+          keywords: chosenKeywords,
+        },
+      });
+
+      if (error) throw new Error(error.message);
+      const questions = data?.questions ?? [];
+      if (questions.length === 0) throw new Error("No questions generated");
+
+      setQuestions(questions);
+      setStep("done");
+      navigate("/interview");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Failed to generate questions";
+      setError(msg);
+      setStep("keyword_selection");
+    }
+  };
+
+  const handleSkipKeywords = async () => {
+    setSelectedKeywords(new Set(liveKeywords.slice(0, 5).map((k) => k.name)));
+    await handleConfirmKeywords();
+  };
+
+  const displaySkills = liveKeywords.length > 0
+    ? [...liveKeywords, ...liveKeywords]
+    : fallbackSkills;
+
+  const isLoading = step === "loading_market" || step === "loading_prep";
 
   return (
     <div className="min-h-[calc(100vh-3.5rem)] bg-background">
@@ -172,7 +268,9 @@ export default function Dashboard() {
             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
           </svg>
           <p className="font-heading text-base sm:text-lg font-semibold text-foreground mt-6 px-4 text-center leading-snug">
-            Agent is fetching live market data and preparing questions…
+            {step === "loading_market"
+              ? "Agent is fetching live market data…"
+              : "Agent is generating interview questions…"}
           </p>
           <p className="text-xs sm:text-sm text-muted-foreground mt-2">This will only take a moment.</p>
         </div>
@@ -193,7 +291,7 @@ export default function Dashboard() {
         </div>
       </section>
 
-      {/* ========= TRENDING SKILLS — Auto-scroll Carousel ========= */}
+      {/* ========= TRENDING SKILLS SECTION ========= */}
       <section id="trending" className="py-12 sm:py-16 overflow-hidden scroll-mt-16">
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
           <div className="flex items-center gap-2 mb-2">
@@ -202,26 +300,44 @@ export default function Dashboard() {
             </svg>
             <h2 className="font-heading text-xl sm:text-2xl font-semibold text-foreground">Trending Skills</h2>
             <span className="ml-auto text-xs text-muted-foreground bg-muted px-2.5 py-1 rounded-full font-medium whitespace-nowrap">
-              Live market data
+              {liveKeywords.length > 0 ? "Live market data" : "General trends"}
             </span>
           </div>
           <p className="text-muted-foreground text-sm sm:text-base mb-6">
-            Based on current job listings for frontend and full-stack roles.
+            {liveKeywords.length > 0
+              ? `Based on current job listings for "${session.role || "your target role"}"`
+              : "Start by typing a role above to fetch live data."}
           </p>
+
+          {/* Market error banner */}
+          {marketError && (
+            <div className="mb-4 p-3 rounded-lg bg-amber-50 border border-amber-200 text-sm text-amber-800 flex items-center gap-2">
+              <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+              </svg>
+              {marketError}
+            </div>
+          )}
 
           <div className="relative group">
             <div className="absolute left-0 top-0 bottom-0 w-12 bg-gradient-to-r from-background to-transparent z-10 pointer-events-none" />
             <div className="absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-background to-transparent z-10 pointer-events-none" />
             <div className="overflow-hidden rounded-xl">
               <div className="flex gap-3 animate-carousel hover:animate-carousel-paused w-max">
-                {trendingSkills.map((skill, i) => (
+                {displaySkills.map((skill, i) => (
                   <div
                     key={`${skill.name}-${i}`}
                     className="flex items-center gap-2.5 bg-white border border-border rounded-lg px-4 py-2.5 shadow-sm shrink-0 transition-all duration-200 hover:border-accent/40 hover:shadow-md"
                   >
                     <span className="font-medium text-sm text-foreground whitespace-nowrap">{skill.name}</span>
-                    <span className="text-xs font-semibold text-green-600 bg-green-50 px-1.5 py-0.5 rounded-full">
-                      {skill.growth}
+                    <span className={`text-xs font-semibold px-1.5 py-0.5 rounded-full ${
+                      skill.count > 70
+                        ? "text-green-600 bg-green-50"
+                        : skill.count > 40
+                        ? "text-amber-600 bg-amber-50"
+                        : "text-blue-600 bg-blue-50"
+                    }`}>
+                      +{skill.count}%
                     </span>
                   </div>
                 ))}
@@ -229,19 +345,78 @@ export default function Dashboard() {
             </div>
           </div>
 
-          <div className="mt-8 p-4 sm:p-5 rounded-xl bg-white border border-border shadow-sm">
-            <div className="flex items-start gap-3">
-              <svg className="w-5 h-5 text-accent mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-              </svg>
-              <div>
-                <p className="text-sm font-semibold text-foreground">Practise makes progress</p>
-                <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
-                  Type or select your target role above and click &quot;Start Target Research&quot; to begin a mock interview simulation. No account needed.
-                </p>
+          {/* Keyword Selection Panel */}
+          {step === "keyword_selection" && liveKeywords.length > 0 && (
+            <div className="mt-8 p-5 sm:p-6 rounded-xl bg-white border border-border shadow-sm animate-fade-in-up">
+              <div className="flex items-start gap-3">
+                <svg className="w-5 h-5 text-accent mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                </svg>
+                <div className="flex-1">
+                  <p className="text-sm font-semibold text-foreground">
+                    Select the skills you want to practise in your interview
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Choose the most relevant skills for your target role. Top 5 are pre-selected.
+                  </p>
+                </div>
+              </div>
+              <div className="mt-4 flex flex-wrap gap-2">
+                {liveKeywords.map((sk) => {
+                  const isSelected = selectedKeywords.has(sk.name);
+                  return (
+                    <button
+                      key={sk.name}
+                      onClick={() => toggleKeyword(sk.name)}
+                      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium cursor-pointer transition-all duration-200 border ${
+                        isSelected
+                          ? "bg-accent text-white border-accent shadow-sm"
+                          : "bg-white text-foreground border-border hover:border-accent/40 hover:bg-muted"
+                      }`}
+                    >
+                      {sk.name}
+                      {isSelected && (
+                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                        </svg>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+              <div className="mt-5 flex items-center gap-3">
+                <button
+                  onClick={handleConfirmKeywords}
+                  className="btn-active px-6 py-2.5 rounded-lg bg-primary hover:bg-primary/90 text-white font-semibold text-sm cursor-pointer transition-all duration-200 hover:-translate-y-0.5"
+                >
+                  Generate Questions ({selectedKeywords.size} skills)
+                </button>
+                <button
+                  onClick={handleSkipKeywords}
+                  className="btn-active px-4 py-2.5 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground border border-border hover:border-accent cursor-pointer transition-all duration-200"
+                >
+                  Skip & Auto-Select
+                </button>
               </div>
             </div>
-          </div>
+          )}
+
+          {/* Idle state CTA */}
+          {step === "idle" && (
+            <div className="mt-8 p-4 sm:p-5 rounded-xl bg-white border border-border shadow-sm">
+              <div className="flex items-start gap-3">
+                <svg className="w-5 h-5 text-accent mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                </svg>
+                <div>
+                  <p className="text-sm font-semibold text-foreground">Practise makes progress</p>
+                  <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
+                    Type or select your target role above and click &quot;Start Target Research&quot; to begin a mock interview simulation. No account needed.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </section>
 
