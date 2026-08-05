@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { useInterviewSession } from "../lib/InterviewSession";
+import { useInterviewSession, type QuestionAnswer } from "../lib/InterviewSession";
 import { createAudioCapture } from "../lib/audio";
 import {
   startSpeechmaticsSession,
@@ -93,9 +93,17 @@ export default function InterviewRoom() {
   const audioCaptureRef = useRef<ReturnType<typeof createAudioCapture> | null>(null);
   const smSessionRef = useRef<SpeechmaticsSession | null>(null);
   const queueRef = useRef<AudioChunkQueue | null>(null);
+  /* Track latest answers in a ref so async callbacks never use stale values */
+  const answersRef = useRef<QuestionAnswer[]>(session.answers);
+  const currentFillerWordsRef = useRef<string[]>([]);
 
   const questions = session.questions;
   const totalQuestions = questions.length;
+
+  /* Keep answersRef in sync with session.answers — ref never goes stale */
+  useEffect(() => {
+    answersRef.current = session.answers;
+  }, [session.answers]);
 
   /* Redirect if no questions in session */
   useEffect(() => {
@@ -203,6 +211,11 @@ export default function InterviewRoom() {
             setCurrentTranscript((prev) => (prev ? prev + " " : "") + event.text);
             const filler = countFillerWords(event.words);
             setCurrentFillerCount((prev) => prev + filler.count);
+            /* Track actual filler words in a ref so submitCurrentAnswer can read them */
+            currentFillerWordsRef.current = [
+              ...currentFillerWordsRef.current,
+              ...filler.fillerWords,
+            ];
           }
         },
         queue,
@@ -277,7 +290,9 @@ export default function InterviewRoom() {
   const submitCurrentAnswer = useCallback(() => {
     const answerText = useTextarea ? textAnswer.trim() : currentTranscript.trim();
     const fillerCount = useTextarea ? 0 : currentFillerCount;
-    const fillerWords: string[] = useTextarea ? [] : [];
+    const fillerWords: string[] = useTextarea
+      ? []
+      : [...currentFillerWordsRef.current];
 
     addAnswer({
       question: questions[questionIndex],
@@ -286,6 +301,33 @@ export default function InterviewRoom() {
       fillerWords,
     });
   }, [useTextarea, textAnswer, currentTranscript, currentFillerCount, addAnswer, questions, questionIndex]);
+
+  const handleFinishEvaluation = useCallback(async () => {
+    if (isEvaluating) return;
+    setIsEvaluating(true);
+    setLoading(true);
+    try {
+      /* Use ref to always send the latest answers, even when called
+         immediately after addAnswer before React re-renders */
+      const { data, error } = await supabase.functions.invoke("evaluation", {
+        body: {
+          role: session.role,
+          language: session.language || "en",
+          keywords: session.keywords,
+          questions: session.questions,
+          answers: answersRef.current,
+        },
+      });
+      if (error) throw new Error(error.message);
+      setEvaluation(data);
+      navigate("/report");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Evaluation failed";
+      setError(msg);
+      setLoading(false);
+      setIsEvaluating(false);
+    }
+  }, [isEvaluating, session, setLoading, setEvaluation, navigate]);
 
   const handleNext = useCallback(() => {
     submitCurrentAnswer();
@@ -296,7 +338,7 @@ export default function InterviewRoom() {
       /* Last question — trigger evaluation */
       handleFinishEvaluation();
     }
-  }, [submitCurrentAnswer, questionIndex, totalQuestions, resetPerQuestion]);
+  }, [submitCurrentAnswer, questionIndex, totalQuestions, resetPerQuestion, handleFinishEvaluation]);
 
   const handleSkip = useCallback(() => {
     /* Add empty answer for skipped question */
@@ -314,32 +356,7 @@ export default function InterviewRoom() {
     } else {
       handleFinishEvaluation();
     }
-  }, [questionIndex, totalQuestions, resetPerQuestion, addAnswer, questions, useTextarea, hasRecording]);
-
-  const handleFinishEvaluation = useCallback(async () => {
-    if (isEvaluating) return;
-    setIsEvaluating(true);
-    setLoading(true);
-    try {
-      const { data, error } = await supabase.functions.invoke("evaluation", {
-        body: {
-          role: session.role,
-          language: session.language || "en",
-          keywords: session.keywords,
-          questions: session.questions,
-          answers: session.answers,
-        },
-      });
-      if (error) throw new Error(error.message);
-      setEvaluation(data);
-      navigate("/report");
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Evaluation failed";
-      setError(msg);
-      setLoading(false);
-      setIsEvaluating(false);
-    }
-  }, [isEvaluating, session, setLoading, setEvaluation, navigate]);
+  }, [questionIndex, totalQuestions, resetPerQuestion, addAnswer, questions, useTextarea, hasRecording, handleFinishEvaluation]);
 
   const handleRetry = useCallback(() => {
     /* If in textarea mode with text, keep it */
