@@ -82,6 +82,12 @@ export default function InterviewRoom() {
   /* Evaluation */
   const [isEvaluating, setIsEvaluating] = useState(false);
 
+  /* AI-generated hints */
+  const [hintLoading, setHintLoading] = useState(false);
+  const [hintSuggestion, setHintSuggestion] = useState("");
+  const [hintError, setHintError] = useState<string | null>(null);
+  const lastHintQuestionRef = useRef<number>(-1);
+
   /* Refs */
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
@@ -123,6 +129,10 @@ export default function InterviewRoom() {
     setHasRecording(false);
     setElapsed(0);
     setShowHint(false);
+    setHintLoading(false);
+    setHintSuggestion("");
+    setHintError(null);
+    lastHintQuestionRef.current = -1;
     setMicState("idle");
   }, []);
 
@@ -368,6 +378,42 @@ export default function InterviewRoom() {
     resetPerQuestion();
   }, [useTextarea, resetPerQuestion]);
 
+  /* ── Fetch AI-generated STAR hint for the current question ── */
+  const fetchHint = useCallback(async (question: string) => {
+    setHintLoading(true);
+    setHintError(null);
+    try {
+      const { data, error } = await supabase.functions.invoke("interview-hint", {
+        body: {
+          role: session.role,
+          language: session.language || "en",
+          question,
+          keywords: session.keywords,
+        },
+      });
+      if (error) throw new Error(error.message);
+      if (data?.suggestion) {
+        setHintSuggestion(data.suggestion);
+      } else {
+        throw new Error("No hint generated");
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Failed to load hint";
+      setHintError(msg);
+      setHintSuggestion("");
+    } finally {
+      setHintLoading(false);
+    }
+  }, [session.role, session.language, session.keywords]);
+
+  /* ── Auto-fetch hint when the panel opens for a new question ── */
+  useEffect(() => {
+    if (showHint && lastHintQuestionRef.current !== questionIndex) {
+      lastHintQuestionRef.current = questionIndex;
+      fetchHint(questions[questionIndex]);
+    }
+  }, [showHint, questionIndex, questions, fetchHint]);
+
   /* Cleanup on unmount */
   useEffect(() => {
     return () => {
@@ -536,16 +582,41 @@ export default function InterviewRoom() {
                       </div>
                     ))}
                   </div>
-                  <div className="bg-accent/5 border border-accent/20 rounded-lg p-3">
-                    <div className="flex items-start gap-2">
-                      <svg className="w-4 h-4 text-accent mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 18v-5.25m0 0a6.01 6.01 0 001.5-.189m-1.5.189a6.01 6.01 0 01-1.5-.189m3.75 7.478a12.06 12.06 0 01-4.5 0m3.75 2.383a14.406 14.406 0 01-3 0M14.25 18v-.192c0-.983.658-1.823 1.508-2.316a7.5 7.5 0 10-7.517 0c.85.493 1.509 1.333 1.509 2.316V18" />
-                      </svg>
-                      <p className="text-xs sm:text-sm text-foreground leading-relaxed">
-                        <span className="font-semibold">Interviewer Agent Suggestion:</span>{" "}
-                        For this question about an optimisation project, try framing your answer around a specific performance metric. For example: &quot;I reduced page load time from 8s to 2s by implementing lazy loading and image compression.&quot;
-                      </p>
-                    </div>
+                  <div className="bg-accent/5 border border-accent/20 rounded-lg p-3 min-h-[3rem]">
+                    {/* Loading state */}
+                    {hintLoading && (
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <svg className="w-4 h-4 text-accent animate-spin" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                        </svg>
+                        Generating personalised hint...
+                      </div>
+                    )}
+                    {/* Error state */}
+                    {hintError && !hintLoading && (
+                      <div className="flex items-center justify-between gap-2 text-sm text-amber-700">
+                        <span>Couldn't generate a hint right now.</span>
+                        <button
+                          onClick={() => fetchHint(questions[questionIndex])}
+                          className="text-xs font-semibold text-accent hover:text-accent/80 underline cursor-pointer"
+                        >
+                          Retry
+                        </button>
+                      </div>
+                    )}
+                    {/* Success state */}
+                    {hintSuggestion && !hintLoading && (
+                      <div className="flex items-start gap-2">
+                        <svg className="w-4 h-4 text-accent mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M12 18v-5.25m0 0a6.01 6.01 0 001.5-.189m-1.5.189a6.01 6.01 0 01-1.5-.189m3.75 7.478a12.06 12.06 0 01-4.5 0m3.75 2.383a14.406 14.406 0 01-3 0M14.25 18v-.192c0-.983.658-1.823 1.508-2.316a7.5 7.5 0 10-7.517 0c.85.493 1.509 1.333 1.509 2.316V18" />
+                        </svg>
+                        <p className="text-xs sm:text-sm text-foreground leading-relaxed">
+                          <span className="font-semibold">Interviewer Agent Suggestion:</span>{" "}
+                          {hintSuggestion}
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>

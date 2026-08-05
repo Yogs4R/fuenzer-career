@@ -148,10 +148,12 @@ export default function Dashboard() {
   const [selectedKeywords, setSelectedKeywords] = useState<Set<string>>(new Set());
   const [liveKeywords, setLiveKeywords] = useState<{ name: string; count: number }[]>([]);
   const [marketError, setMarketError] = useState<string | null>(null);
+  const [prepError, setPrepError] = useState<string | null>(null);
   const [keywordsMinError, setKeywordsMinError] = useState(false);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const [testimonialIndex, setTestimonialIndex] = useState(0);
   const [autoRotate, setAutoRotate] = useState(true);
+  const [loadingElapsed, setLoadingElapsed] = useState(0);
 
   /* ── Trending skills search / filter / sort ── */
   const [trendSearch, setTrendSearch] = useState("");
@@ -200,6 +202,18 @@ export default function Dashboard() {
     return () => clearInterval(t);
   }, [autoRotate]);
 
+  /* Loading elapsed timer for "still working..." message */
+  useEffect(() => {
+    if (!isLoading) {
+      setLoadingElapsed(0);
+      return;
+    }
+    const t = setInterval(() => {
+      setLoadingElapsed((p) => p + 1);
+    }, 1000);
+    return () => clearInterval(t);
+  }, [isLoading]);
+
   const nextTestimonial = () => {
     setAutoRotate(false);
     setTestimonialIndex((p) => (p + 1) % testimonials.length);
@@ -212,7 +226,8 @@ export default function Dashboard() {
   /* ── Rate limiter: prevent rapid re-clicks ── */
   const lastCallRef = useRef(0);
   const CALL_COOLDOWN_MS = 10_000; // 10 seconds between calls
-  const FETCH_TIMEOUT_MS = 30_000; // 30 seconds max per fetch
+  const FETCH_TIMEOUT_MS = 25_000; // 25 seconds max for market research
+  const FETCH_TIMEOUT_MS_PREP = 15_000; // 15 seconds for question generation
 
   /* ── Step 1: Market Research ── */
   const handleStart = async () => {
@@ -233,6 +248,7 @@ export default function Dashboard() {
     setRole(role);
     setStep("loading_market");
     setMarketError(null);
+    setPrepError(null);
 
     /* Create a timeout promise */
     const timeoutPromise = new Promise<"timeout">((_, reject) => {
@@ -304,10 +320,11 @@ export default function Dashboard() {
       return;
     }
     setKeywordsMinError(false);
+    setPrepError(null);
     setStep("loading_prep");
 
     const timeoutPromise = new Promise<"timeout">((_, reject) => {
-      setTimeout(() => reject(new Error("TIMEOUT")), FETCH_TIMEOUT_MS);
+      setTimeout(() => reject(new Error("TIMEOUT")), FETCH_TIMEOUT_MS_PREP);
     });
 
     try {
@@ -338,7 +355,7 @@ export default function Dashboard() {
       const msg = isTimeout
         ? "The question generation is taking too long. Try again with fewer skills selected."
         : err instanceof Error ? err.message : "Failed to generate questions";
-      setError(msg);
+      setPrepError(msg);
       setStep("keyword_selection");
     }
   };
@@ -368,7 +385,11 @@ export default function Dashboard() {
               ? "Agent is fetching live market data…"
               : "Agent is generating interview questions…"}
           </p>
-          <p className="text-xs sm:text-sm text-muted-foreground mt-2">This will only take a moment.</p>
+          <p className="text-xs sm:text-sm text-muted-foreground mt-2">
+            {loadingElapsed < 10
+              ? "This will only take a moment."
+              : "Still working on it — hang tight! This can take up to 25 seconds."}
+          </p>
         </div>
       )}
 
@@ -531,6 +552,30 @@ export default function Dashboard() {
                   </svg>
                   Select at least 3 skills to continue.
                 </p>
+              )}
+
+              {/* Prep error retry banner */}
+              {prepError && (
+                <div className="mt-4 p-3 rounded-lg bg-red-50 border border-red-200 text-sm text-red-800">
+                  <div className="flex items-start gap-2">
+                    <svg className="w-4 h-4 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+                    </svg>
+                    <div className="flex-1">
+                      <p className="font-medium">Couldn't generate questions</p>
+                      <p className="mt-1 text-red-700">{prepError}</p>
+                      <button
+                        onClick={handleConfirmKeywords}
+                        className="btn-active mt-2 inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-red-600 hover:bg-red-700 text-white text-xs font-semibold cursor-pointer transition-all duration-200"
+                      >
+                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182" />
+                        </svg>
+                        Try Again
+                      </button>
+                    </div>
+                  </div>
+                </div>
               )}
             </div>
           )}
