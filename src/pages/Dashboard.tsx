@@ -155,6 +155,8 @@ export default function Dashboard() {
   const [autoRotate, setAutoRotate] = useState(true);
   const [loadingElapsed, setLoadingElapsed] = useState(0);
 
+  const isLoading = step === "loading_market" || step === "loading_prep";
+
   /* ── Trending skills search / filter / sort ── */
   const [trendSearch, setTrendSearch] = useState("");
   const [trendFilter, setTrendFilter] = useState<"all" | "high" | "mid" | "low">("all");
@@ -368,8 +370,6 @@ export default function Dashboard() {
   const displaySkills = filteredSortedSkills.length > 0
     ? [...filteredSortedSkills, ...filteredSortedSkills]
     : filteredSortedSkills;
-
-  const isLoading = step === "loading_market" || step === "loading_prep";
 
   return (
     <div className="min-h-[calc(100vh-3.5rem)] bg-background">
