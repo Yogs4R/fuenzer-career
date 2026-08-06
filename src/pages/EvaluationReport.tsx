@@ -4,6 +4,7 @@ import { useInterviewSession, type QuestionAnswer, type EvaluationData, loadGues
 import { useAuth } from "../lib/AuthContext";
 import { supabase } from "../lib/supabaseClient";
 import { usePageTitle } from "../hooks/usePageTitle";
+import { useTranslation } from "../lib/i18n";
 
 /* ── Animated bar component ── */
 function AnimatedBar({ score, delay }: { score: number; delay: number }) {
@@ -33,6 +34,7 @@ export default function EvaluationReport() {
 
   const { session, reset } = useInterviewSession();
   const { user } = useAuth();
+  const { t } = useTranslation();
 
   /* ── Historical report data state ── */
   const [historical, setHistorical] = useState<{
@@ -165,7 +167,7 @@ export default function EvaluationReport() {
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
           </svg>
-          <p className="text-sm text-muted-foreground">Loading report...</p>
+          <p className="text-sm text-muted-foreground">{t("report.loading")}</p>
         </div>
       </div>
     );
@@ -179,15 +181,15 @@ export default function EvaluationReport() {
           <svg className="w-12 h-12 text-destructive/60 mx-auto mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
           </svg>
-          <h2 className="font-heading text-lg font-semibold text-foreground mb-2">Report Not Found</h2>
+          <h2 className="font-heading text-lg font-semibold text-foreground mb-2">{t("report.error.notFound")}</h2>
           <p className="text-sm text-muted-foreground mb-4">
-            We couldn't find that report. It may have been removed or you may not have permission to view it.
+            {t("report.error.notFoundDesc")}
           </p>
           <button
             onClick={() => navigate("/")}
             className="px-6 py-2 rounded-lg bg-primary hover:bg-primary/90 text-white font-semibold text-sm cursor-pointer transition-colors"
           >
-            Go to Dashboard
+            {t("report.error.goToDashboard")}
           </button>
         </div>
       </div>
@@ -219,18 +221,18 @@ export default function EvaluationReport() {
 
   const scoreLabel =
     overallScore >= 90
-      ? "Excellent!"
+      ? t("report.score.excellent")
       : overallScore >= 75
-        ? "Great performance!"
+        ? t("report.score.great")
         : overallScore >= 50
-          ? "Good effort — room to grow"
-          : "Needs work — keep practising";
+          ? t("report.score.good")
+          : t("report.score.needsWork");
 
   const summaryText =
     delivery?.feedback ||
     (overallScore >= 75
-      ? "You demonstrated strong technical knowledge and clear communication. Focus on deepening your answers for an even stronger impact."
-      : "Keep practising! Focus on structuring your answers clearly and backing them with specific examples.");
+      ? t("report.summary.high")
+      : t("report.summary.low"));
 
   return (
     <div className="min-h-[calc(100vh-3.5rem)] bg-background">
@@ -243,11 +245,11 @@ export default function EvaluationReport() {
             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
             </svg>
-            Evaluation Complete
+            {t("report.titleBadge")}
           </div>
-          <h1 className="font-heading text-3xl sm:text-4xl font-bold text-foreground">Your Interview Dashboard</h1>
+          <h1 className="font-heading text-3xl sm:text-4xl font-bold text-foreground">{t("report.heading")}</h1>
           <p className="mt-2 text-sm sm:text-base text-muted-foreground">
-            Detailed breakdown of your{effectiveRole ? ` ${effectiveRole}` : ""} mock interview performance.
+            {t("report.subtitle", { role: effectiveRole ? ` ${effectiveRole}` : "" })}
           </p>
         </div>
 
@@ -294,7 +296,7 @@ export default function EvaluationReport() {
                   <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 10.5L12 3m0 0l7.5 7.5M12 3v18" />
                   </svg>
-                  Outstanding performance
+                  {t("report.recommendations.outstanding")}
                 </span>
               )}
               {perQuestion.length > 0 && (
@@ -302,7 +304,7 @@ export default function EvaluationReport() {
                   <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
                   </svg>
-                  {skillMatch.missing.length} skill{skillMatch.missing.length !== 1 ? "s" : ""} to develop
+                  {t("report.recommendations.skillsToDevelop", { count: skillMatch.missing.length })}
                 </span>
               )}
             </div>
@@ -317,11 +319,11 @@ export default function EvaluationReport() {
             <svg className="w-5 h-5 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5m8.25 3v6.75m0 0l-3-3m3 3l3-3M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" />
             </svg>
-            <h2 className="font-heading text-lg font-semibold text-foreground">Skill Match</h2>
+            <h2 className="font-heading text-lg font-semibold text-foreground">{t("report.skillMatch.heading")}</h2>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <p className="text-xs font-semibold text-green-600 uppercase tracking-wider mb-2">Demonstrated ✓</p>
+              <p className="text-xs font-semibold text-green-600 uppercase tracking-wider mb-2">{t("report.skillMatch.demonstrated")}</p>
               <div className="flex flex-wrap gap-1.5">
                 {skillMatch.matched.length > 0
                   ? skillMatch.matched.map((s) => (
@@ -332,11 +334,11 @@ export default function EvaluationReport() {
                         {s}
                       </span>
                     ))
-                  : <p className="text-xs text-muted-foreground">No skills matched yet.</p>}
+                  : <p className="text-xs text-muted-foreground">{t("report.skillMatch.noMatch")}</p>}
               </div>
             </div>
             <div>
-              <p className="text-xs font-semibold text-amber-600 uppercase tracking-wider mb-2">Focus Areas</p>
+              <p className="text-xs font-semibold text-amber-600 uppercase tracking-wider mb-2">{t("report.skillMatch.focusAreas")}</p>
               <div className="flex flex-wrap gap-1.5">
                 {skillMatch.missing.length > 0
                   ? skillMatch.missing.map((s) => (
@@ -347,7 +349,7 @@ export default function EvaluationReport() {
                         {s}
                       </span>
                     ))
-                  : <p className="text-xs text-muted-foreground">No missing skills — great alignment!</p>}
+                  : <p className="text-xs text-muted-foreground">{t("report.skillMatch.noMissing")}</p>}
               </div>
             </div>
           </div>
@@ -358,7 +360,7 @@ export default function EvaluationReport() {
         {/* ======================== */}
         {perQuestion.length > 0 && (
           <div className="mb-6">
-            <h2 className="font-heading text-lg font-semibold text-foreground mb-4">Per-Question Breakdown</h2>
+            <h2 className="font-heading text-lg font-semibold text-foreground mb-4">{t("report.breakdown.heading")}</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {perQuestion.map((pq, i) => (
                 <div
@@ -411,7 +413,7 @@ export default function EvaluationReport() {
               <svg className="w-5 h-5 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
               </svg>
-              <h2 className="font-heading text-lg font-semibold text-foreground">Transcript</h2>
+              <h2 className="font-heading text-lg font-semibold text-foreground">{t("report.transcript.heading")}</h2>
             </div>
             {answers.length > 0 ? (
               <>
@@ -421,8 +423,10 @@ export default function EvaluationReport() {
                 </div>
                 {answers[question].fillerCount > 0 && (
                   <p className="mt-2 text-xs text-muted-foreground">
-                    {answers[question].fillerCount} filler word{answers[question].fillerCount !== 1 ? "s" : ""} detected:{" "}
-                    <span className="text-amber-600 font-medium">{answers[question].fillerWords.join(", ")}</span>
+                    {t("report.transcript.fillerDetected", {
+                      count: answers[question].fillerCount,
+                      words: answers[question].fillerWords.join(", "),
+                    })}
                   </p>
                 )}
                 {/* Question pagination */}
@@ -431,7 +435,7 @@ export default function EvaluationReport() {
                     onClick={() => setQuestion((q) => Math.max(0, q - 1))}
                     disabled={question === 0}
                     className="px-2.5 py-1.5 rounded-md text-xs font-medium border border-border text-muted-foreground hover:text-foreground hover:bg-muted disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-colors"
-                    aria-label="Previous question"
+                    aria-label={t("report.transcript.prev")}
                   >
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
@@ -447,7 +451,7 @@ export default function EvaluationReport() {
                             ? "bg-accent text-white"
                             : "text-muted-foreground bg-muted hover:text-foreground hover:bg-muted/70"
                         }`}
-                        aria-label={`Question ${i + 1}`}
+                        aria-label={t("report.transcript.aria.question", { index: i + 1 })}
                       >
                         {i + 1}
                       </button>
@@ -457,7 +461,7 @@ export default function EvaluationReport() {
                     onClick={() => setQuestion((q) => Math.min(answers.length - 1, q + 1))}
                     disabled={question === answers.length - 1}
                     className="px-2.5 py-1.5 rounded-md text-xs font-medium border border-border text-muted-foreground hover:text-foreground hover:bg-muted disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-colors"
-                    aria-label="Next question"
+                    aria-label={t("report.transcript.next")}
                   >
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
@@ -465,11 +469,11 @@ export default function EvaluationReport() {
                   </button>
                 </div>
                 <p className="mt-2 text-xs text-muted-foreground text-right">
-                  Question {question + 1} of {answers.length}
+                  {t("report.transcript.questionCount", { current: question + 1, total: answers.length })}
                 </p>
               </>
             ) : (
-              <p className="text-sm text-muted-foreground italic">No transcript data available.</p>
+              <p className="text-sm text-muted-foreground italic">{t("report.transcript.noData")}</p>
             )}
           </div>
 
@@ -479,16 +483,16 @@ export default function EvaluationReport() {
               <svg className="w-5 h-5 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
               </svg>
-              <h2 className="font-heading text-lg font-semibold text-foreground">Recommendations</h2>
+              <h2 className="font-heading text-lg font-semibold text-foreground">{t("report.recommendations.heading")}</h2>
             </div>
 
             {/* Skill match insight */}
             <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
               <p className="text-xs text-blue-700">
-                <strong>Skill match:</strong> You demonstrated{" "}
-                <strong>{skillMatch.matched.join(", ") || "—"}</strong>.
+                <strong>{t("report.recommendations.skillMatch")}</strong>{" "}
+                {t("report.recommendations.skillMatchYou", { matched: skillMatch.matched.join(", ") || "—" })}
                 {skillMatch.missing.length > 0 && (
-                  <> Focus on developing <strong>{skillMatch.missing.join(", ")}</strong>.</>
+                  <> {t("report.recommendations.skillMatchMissing", { missing: skillMatch.missing.join(", ") })}</>
                 )}
               </p>
             </div>
@@ -496,7 +500,7 @@ export default function EvaluationReport() {
             {/* Delivery feedback */}
             {delivery.feedback && (
               <div className="mb-4 p-3 bg-muted rounded-lg">
-                <p className="text-xs font-semibold text-foreground mb-1">Delivery</p>
+                <p className="text-xs font-semibold text-foreground mb-1">{t("report.recommendations.delivery")}</p>
                 <p className="text-xs text-muted-foreground">{delivery.feedback}</p>
               </div>
             )}
@@ -509,10 +513,10 @@ export default function EvaluationReport() {
                     <path strokeLinecap="round" strokeLinejoin="round" d="M10.34 15.84c-.688-.06-1.386-.09-2.09-.09H7.5a4.5 4.5 0 110-9h.75c.704 0 1.402-.03 2.09-.09m0 9.18c.253.962.584 1.892.985 2.783.247.55.06 1.21-.463 1.511l-.657.38a.477.477 0 01-.611-.09 17.3 17.3 0 01-2.64-3.744l-.002-.002m6.028-8.838c.253-.962.584-1.892.985-2.783.247-.55.06-1.21-.463-1.511l-.657-.38a.477.477 0 00-.611.09 17.3 17.3 0 00-2.64 3.744l.002.002m0 0a18.95 18.95 0 00-3.464 1.754m0 0a18.94 18.94 0 003.464 1.754m0 0l.002.002" />
                   </svg>
                   <h3 className="text-xs font-semibold text-foreground uppercase tracking-wider">
-                    Filler Word Analysis
+                    {t("report.recommendations.fillerAnalysis")}
                   </h3>
                   <span className="ml-auto text-xs font-bold text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full">
-                    {fillerWords.totalCount} total
+                    {t("report.recommendations.fillerTotal", { count: fillerWords.totalCount })}
                   </span>
                 </div>
 
@@ -552,7 +556,7 @@ export default function EvaluationReport() {
             ) : (
               <div className="mb-4 p-3 bg-muted/50 rounded-lg border border-border">
                 <p className="text-xs text-muted-foreground italic">
-                  No filler word data available. Speak your answers with the microphone to get filler word analysis.
+                  {t("report.recommendations.noFiller")}
                 </p>
               </div>
             )}
@@ -563,21 +567,21 @@ export default function EvaluationReport() {
               const uniqueTips = [...new Set(allTips)];
               return uniqueTips.length > 0 ? (
                 <>
-                  <h3 className="text-xs font-semibold text-foreground uppercase tracking-wider mb-2">Actionable Tips</h3>
+                  <h3 className="text-xs font-semibold text-foreground uppercase tracking-wider mb-2">{t("report.recommendations.tips")}</h3>
                   <ul className="space-y-2">
                     {uniqueTips.map((tip, i) => (
                       <li key={i} className="flex items-start gap-3">
                         <span className="mt-0.5 w-1.5 h-1.5 rounded-full shrink-0 bg-amber-500" />
                         <div className="flex-1 min-w-0">
                           <p className="text-sm text-foreground">{tip}</p>
-                          <p className="text-xs text-muted-foreground">Suggestion</p>
+                          <p className="text-xs text-muted-foreground">{t("report.recommendations.suggestion")}</p>
                         </div>
                       </li>
                     ))}
                   </ul>
                 </>
               ) : (
-                <p className="text-sm text-muted-foreground italic">No specific tips available.</p>
+                <p className="text-sm text-muted-foreground italic">{t("report.recommendations.noTips")}</p>
               );
             })()}
           </div>
@@ -592,10 +596,10 @@ export default function EvaluationReport() {
             className="btn-active px-8 py-3 rounded-lg bg-primary hover:bg-primary/90 text-white font-semibold text-base shadow-md cursor-pointer transition-all duration-200 hover:-translate-y-0.5 animate-fade-in-up"
             style={{ animationDelay: "550ms" }}
           >
-            Try Another Role
+            {t("report.cta.button")}
           </button>
           <p className="mt-3 text-xs text-muted-foreground">
-            Ready for another round? Practise makes progress.
+            {t("report.cta.subtitle")}
           </p>
         </div>
       </div>

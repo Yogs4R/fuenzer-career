@@ -7,6 +7,7 @@ import { supabase } from "../lib/supabaseClient";
 import { useInterviewSession } from "../lib/InterviewSession";
 import type { Language, Difficulty } from "../lib/InterviewSession";
 import { usePageTitle } from "../hooks/usePageTitle";
+import { useTranslation } from "../lib/i18n";
 
 /* ── Fallback skills (used when market-agent fails) ── */
 const fallbackSkills = [
@@ -64,127 +65,13 @@ const fallbackSkills = [
   { name: "Stakeholder Management", count: 62 },
 ];
 
-const faqItems = [
-  {
-    question: "Is this free?",
-    answer: "Yes! Phase 1 is completely free. No account or credit card needed — just type a role and start practising.",
-  },
-  {
-    question: "Do I need a microphone?",
-    answer: "For the best experience, yes. You can still explore the platform without one, but voice practice is where the real magic happens.",
-  },
-  {
-    question: "How does the AI feedback work?",
-    answer: "Our AI analyses your speech patterns, filler word usage, and how well your answers match the target role’s required skills.",
-  },
-  {
-    question: "Can I save my progress?",
-    answer: "Yes! Create a free account and your interview history, scores, and feedback are automatically saved. You can review past sessions anytime from the history panel.",
-  },
-  {
-    question: "Do I need an account to use Fuenzer Career?",
-    answer: "Nope! You can practise as a guest with no sign-up required. Creating an account just unlocks history tracking, saved reports, and personalised notifications.",
-  },
-];
-
-const testimonials = [
-  {
-    quote: "I felt so much more confident after just three practice sessions. The feedback on my filler words was eye-opening.",
-    author: "Sarah K.",
-    role: "Fresh Graduate",
-    avatar: "SK",
-    color: "bg-blue-500",
-  },
-  {
-    quote: "The trending skills section helped me tailor my resume. Landed my first dev role in 3 weeks.",
-    author: "Alex M.",
-    role: "Frontend Developer",
-    avatar: "AM",
-    color: "bg-emerald-500",
-  },
-  {
-    quote: "Finally, a tool that lets me practice speaking, not just typing answers. Game changer.",
-    author: "Priya R.",
-    role: "Product Manager",
-    avatar: "PR",
-    color: "bg-purple-500",
-  },
-  {
-    quote: "The AI feedback pinpointed exactly where I was hesitating. Fixed it in two sessions.",
-    author: "James L.",
-    role: "Backend Developer",
-    avatar: "JL",
-    color: "bg-amber-500",
-  },
-  {
-    quote: "I used to freeze in interviews. Now I walk in knowing exactly what to say. Unreal tool.",
-    author: "Maya T.",
-    role: "UX Designer",
-    avatar: "MT",
-    color: "bg-rose-500",
-  },
-  {
-    quote: "The history feature is a lifesaver \u2014 I can track my improvement across every single practice session.",
-    author: "David C.",
-    role: "Data Analyst",
-    avatar: "DC",
-    color: "bg-teal-500",
-  },
-  {
-    quote: "I love that I can practise as a guest and still get full AI feedback. No barriers, just results.",
-    author: "Emma W.",
-    role: "Marketing Manager",
-    avatar: "EW",
-    color: "bg-pink-500",
-  },
-  {
-    quote: "The STAR-method guidance reshaped how I answer behavioural questions. Huge confidence boost.",
-    author: "Carlos G.",
-    role: "Engineering Manager",
-    avatar: "CG",
-    color: "bg-indigo-500",
-  },
-];
-
-const agents = [
-  {
-    title: "Market Job Agent",
-    subtitle: "Scrapes live job listings to identify trending skills, salary ranges, and role requirements in real time.",
-    accent: "from-blue-400 to-blue-600",
-    icon: (
-      <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 6.375c0 2.278-3.694 4.125-8.25 4.125S3.75 8.653 3.75 6.375m16.5 0c0-2.278-3.694-4.125-8.25-4.125S3.75 4.097 3.75 6.375m16.5 0v11.25c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125V6.375m16.5 0v3.75m-16.5-3.75v3.75m16.5 0v3.75C20.25 16.153 16.556 18 12 18s-8.25-1.847-8.25-4.125v-3.75m16.5 0c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125" />
-      </svg>
-    ),
-  },
-  {
-    title: "Interviewer Agent",
-    subtitle: "Generates contextual interview questions based on the role and guides you through STAR-method responses.",
-    accent: "from-accent to-blue-500",
-    icon: (
-      <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M12 18.75a6 6 0 006-6v-1.5m-6 7.5a6 6 0 01-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 01-3-3V4.5a3 3 0 116 0v8.25a3 3 0 01-3 3z" />
-      </svg>
-    ),
-  },
-  {
-    title: "Evaluation Agent",
-    subtitle: "Analyses your voice responses for clarity, confidence, skill alignment, and actionable improvement tips.",
-    accent: "from-green-400 to-emerald-600",
-    icon: (
-      <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" />
-      </svg>
-    ),
-  },
-];
-
 type DashboardStep = "idle" | "loading_market" | "keyword_selection" | "loading_prep" | "done";
 
 export default function Dashboard() {
   usePageTitle("AI Interview Coach");
   const navigate = useNavigate();
   const location = useLocation();
+  const { t } = useTranslation();
   const {
     session,
     setRole,
@@ -219,7 +106,105 @@ export default function Dashboard() {
 
   const isLoading = step === "loading_market" || step === "loading_prep";
 
-  /* Hard‑coded fallback skills used when the Market Agent cannot be reached. */
+  const testimonials = useMemo(() => [
+    {
+      quote: t("dashboard.testimonials.quote1"),
+      author: t("dashboard.testimonials.author1"),
+      role: t("dashboard.testimonials.role1"),
+      avatar: "SK",
+      color: "bg-blue-500",
+    },
+    {
+      quote: t("dashboard.testimonials.quote2"),
+      author: t("dashboard.testimonials.author2"),
+      role: t("dashboard.testimonials.role2"),
+      avatar: "AM",
+      color: "bg-emerald-500",
+    },
+    {
+      quote: t("dashboard.testimonials.quote3"),
+      author: t("dashboard.testimonials.author3"),
+      role: t("dashboard.testimonials.role3"),
+      avatar: "PR",
+      color: "bg-purple-500",
+    },
+    {
+      quote: t("dashboard.testimonials.quote4"),
+      author: t("dashboard.testimonials.author4"),
+      role: t("dashboard.testimonials.role4"),
+      avatar: "JL",
+      color: "bg-amber-500",
+    },
+    {
+      quote: t("dashboard.testimonials.quote5"),
+      author: t("dashboard.testimonials.author5"),
+      role: t("dashboard.testimonials.role5"),
+      avatar: "MT",
+      color: "bg-rose-500",
+    },
+    {
+      quote: t("dashboard.testimonials.quote6"),
+      author: t("dashboard.testimonials.author6"),
+      role: t("dashboard.testimonials.role6"),
+      avatar: "DC",
+      color: "bg-teal-500",
+    },
+    {
+      quote: t("dashboard.testimonials.quote7"),
+      author: t("dashboard.testimonials.author7"),
+      role: t("dashboard.testimonials.role7"),
+      avatar: "EW",
+      color: "bg-pink-500",
+    },
+    {
+      quote: t("dashboard.testimonials.quote8"),
+      author: t("dashboard.testimonials.author8"),
+      role: t("dashboard.testimonials.role8"),
+      avatar: "CG",
+      color: "bg-indigo-500",
+    },
+  ], [t]);
+
+  const faqItems = useMemo(() => [
+    { question: t("dashboard.faq.q1"), answer: t("dashboard.faq.a1") },
+    { question: t("dashboard.faq.q2"), answer: t("dashboard.faq.a2") },
+    { question: t("dashboard.faq.q3"), answer: t("dashboard.faq.a3") },
+    { question: t("dashboard.faq.q4"), answer: t("dashboard.faq.a4") },
+    { question: t("dashboard.faq.q5"), answer: t("dashboard.faq.a5") },
+  ], [t]);
+
+  const agents = useMemo(() => [
+    {
+      title: t("dashboard.howItWorks.agents.market.title"),
+      subtitle: t("dashboard.howItWorks.agents.market.desc"),
+      accent: "from-blue-400 to-blue-600",
+      icon: (
+        <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 6.375c0 2.278-3.694 4.125-8.25 4.125S3.75 8.653 3.75 6.375m16.5 0c0-2.278-3.694-4.125-8.25-4.125S3.75 4.097 3.75 6.375m16.5 0v11.25c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125V6.375m16.5 0v3.75m-16.5-3.75v3.75m16.5 0v3.75C20.25 16.153 16.556 18 12 18s-8.25-1.847-8.25-4.125v-3.75m16.5 0c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125" />
+        </svg>
+      ),
+    },
+    {
+      title: t("dashboard.howItWorks.agents.interviewer.title"),
+      subtitle: t("dashboard.howItWorks.agents.interviewer.desc"),
+      accent: "from-accent to-blue-500",
+      icon: (
+        <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M12 18.75a6 6 0 006-6v-1.5m-6 7.5a6 6 0 01-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 01-3-3V4.5a3 3 0 116 0v8.25a3 3 0 01-3 3z" />
+        </svg>
+      ),
+    },
+    {
+      title: t("dashboard.howItWorks.agents.evaluation.title"),
+      subtitle: t("dashboard.howItWorks.agents.evaluation.desc"),
+      accent: "from-green-400 to-emerald-600",
+      icon: (
+        <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" />
+        </svg>
+      ),
+    },
+  ], [t]);
 
   /* ── Trending skills search / filter / sort ── */
   const [trendSearch, setTrendSearch] = useState("");
@@ -254,19 +239,19 @@ export default function Dashboard() {
     const id = location.hash.slice(1);
     const el = document.getElementById(id);
     if (el) {
-      const t = setTimeout(() => el.scrollIntoView({ behavior: "smooth" }), 80);
-      return () => clearTimeout(t);
+      const tm = setTimeout(() => el.scrollIntoView({ behavior: "smooth" }), 80);
+      return () => clearTimeout(tm);
     }
   }, [location.hash]);
 
   /* Auto-rotate testimonials */
   useEffect(() => {
     if (!autoRotate) return;
-    const t = setInterval(() => {
+    const tm = setInterval(() => {
       setTestimonialIndex((p) => (p + 1) % testimonials.length);
     }, 5000);
-    return () => clearInterval(t);
-  }, [autoRotate]);
+    return () => clearInterval(tm);
+  }, [autoRotate, testimonials.length]);
 
   /* Loading elapsed timer for "still working..." message */
   useEffect(() => {
@@ -274,10 +259,10 @@ export default function Dashboard() {
       setLoadingElapsed(0);
       return;
     }
-    const t = setInterval(() => {
+    const tm = setInterval(() => {
       setLoadingElapsed((p) => p + 1);
     }, 1000);
-    return () => clearInterval(t);
+    return () => clearInterval(tm);
   }, [isLoading]);
 
   const nextTestimonial = () => {
@@ -290,14 +275,14 @@ export default function Dashboard() {
   };
 
   /* ── Timeouts ── */
-  const FETCH_TIMEOUT_MS = 30_000; // 30 seconds for market agent (Bright Data has its own rate limit)
-  const FETCH_TIMEOUT_MS_PREP = 30_000; // 30 seconds for question generation
+  const FETCH_TIMEOUT_MS = 30_000;
+  const FETCH_TIMEOUT_MS_PREP = 30_000;
 
   /* ── Rate limiters ── */
   const marketCallRef = useRef(0);
-  const MARKET_COOLDOWN_MS = 15_000; // 15 seconds between market-research calls (Bright Data costs credits)
+  const MARKET_COOLDOWN_MS = 15_000;
   const prepCallRef = useRef(0);
-  const PREP_COOLDOWN_MS = 20_000; // 20 seconds between question-gen calls
+  const PREP_COOLDOWN_MS = 20_000;
 
   /* ── Step 1: Market Research ── */
   const handleStart = async () => {
@@ -305,11 +290,11 @@ export default function Dashboard() {
     const role = heroRole.trim();
     if (!role) return;
 
-    /* Rate limiter — prevent rapid market-research calls (Bright Data costs credits) */
+    /* Rate limiter */
     const now = Date.now();
     if (now - marketCallRef.current < MARKET_COOLDOWN_MS) {
       const remaining = Math.ceil((MARKET_COOLDOWN_MS - (now - marketCallRef.current)) / 1000);
-      setMarketError(`Please wait ${remaining} second${remaining > 1 ? "s" : ""} before searching again.`);
+      setMarketError(t("dashboard.error.rateLimit", { seconds: remaining }));
       return;
     }
     marketCallRef.current = now;
@@ -320,7 +305,6 @@ export default function Dashboard() {
     setMarketError(null);
     setPrepError(null);
 
-    /* Create a timeout promise */
     const timeoutPromise = new Promise<"timeout">((_, reject) => {
       setTimeout(() => reject(new Error("TIMEOUT")), FETCH_TIMEOUT_MS);
     });
@@ -352,7 +336,6 @@ export default function Dashboard() {
         if (data?.error) setMarketError(data.error);
       }
       setStep("keyword_selection");
-      /* Auto-scroll to trending section where the keywords panel appears */
       setTimeout(() => {
         document.getElementById("trending")?.scrollIntoView({ behavior: "smooth" });
       }, 150);
@@ -360,8 +343,8 @@ export default function Dashboard() {
       const isTimeout = err instanceof Error && err.message === "TIMEOUT";
       setMarketError(
         isTimeout
-          ? "This search is taking longer than expected. Try a different role or check back later."
-          : "Live data temporarily unavailable. Using general skills.",
+          ? t("dashboard.error.timeout")
+          : t("dashboard.error.liveUnavailable"),
       );
       const fallback = fallbackSkills.slice(0, 10).map((s, i) => ({ name: s.name, count: 100 - i * 5 }));
       setLiveKeywords(fallback);
@@ -395,11 +378,11 @@ export default function Dashboard() {
       return;
     }
 
-    /* Rate limiter — prevent rapid question-gen clicks */
+    /* Rate limiter */
     const now = Date.now();
     if (now - prepCallRef.current < PREP_COOLDOWN_MS) {
       const remaining = Math.ceil((PREP_COOLDOWN_MS - (now - prepCallRef.current)) / 1000);
-      setPrepError(`Please wait ${remaining} second${remaining > 1 ? "s" : ""} before generating again.`);
+      setPrepError(t("dashboard.error.prepRateLimit", { seconds: remaining }));
       return;
     }
     prepCallRef.current = now;
@@ -444,7 +427,7 @@ export default function Dashboard() {
     } catch (err: unknown) {
       const isTimeout = err instanceof Error && err.message === "TIMEOUT";
       const msg = isTimeout
-        ? "The question generation is taking too long. Try again with fewer skills selected."
+        ? t("dashboard.error.prepTimeout")
         : err instanceof Error ? err.message : "Failed to generate questions";
       setPrepError(msg);
       setStep("keyword_selection");
@@ -467,13 +450,11 @@ export default function Dashboard() {
     difficultyCustom: string;
     questionCount: number;
   }) => {
-    /* Update session with config choices */
     setLanguage(config.language);
     setDifficulty(config.difficulty);
     setDifficultyCustom(config.difficultyCustom);
     setQuestionCount(config.questionCount);
     setShowConfigModal(false);
-    /* Proceed to generate questions */
     handleConfirmKeywords(config);
   };
 
@@ -504,7 +485,7 @@ export default function Dashboard() {
     if (existing) existing.remove();
     document.head.appendChild(script);
     return () => { const e = document.getElementById("faq-jsonld"); if (e) e.remove(); };
-  }, []);
+  }, [faqItems]);
 
   return (
     <div className="min-h-[calc(100vh-3.5rem)] bg-background">
@@ -530,27 +511,27 @@ export default function Dashboard() {
           </svg>
           <p className="font-heading text-base sm:text-lg font-semibold text-foreground mt-6 px-4 text-center leading-snug">
             {step === "loading_market"
-              ? "Agent is fetching live market data…"
-              : "Agent is generating interview questions…"}
+              ? t("dashboard.loading.market")
+              : t("dashboard.loading.prep")}
           </p>
-          {/* Live timer counting from 0 */}
+          {/* Live timer */}
           <div className="mt-4 flex items-center gap-2">
             <span className="text-4xl sm:text-5xl font-mono font-bold text-accent tabular-nums">
               {loadingElapsed}
             </span>
             <span className="text-sm text-muted-foreground font-medium">
-              second{loadingElapsed !== 1 ? "s" : ""}
+              {t("dashboard.loading.seconds")}
             </span>
           </div>
           <p className="text-xs sm:text-sm text-muted-foreground mt-3">
             {loadingElapsed < 10
-              ? "Searching the market..."
+              ? t("dashboard.loading.searching")
               : loadingElapsed < 30
-              ? "Still working — fetching live data."
-              : "This is taking a while — thanks for your patience."}
+              ? t("dashboard.loading.working")
+              : t("dashboard.loading.patience")}
           </p>
 
-          {/* Provider credits for hackathon jury */}
+          {/* Provider credits */}
           <div className="mt-6 flex items-center gap-4 text-[10px] text-muted-foreground/60 font-medium tracking-wide">
             <span className="flex items-center gap-1">
               <svg className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="4" width="16" height="16" rx="2" /></svg>
@@ -572,10 +553,10 @@ export default function Dashboard() {
       <section id="hero" className="bg-gradient-to-br from-primary via-primary to-secondary text-on-primary">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 pt-24 pb-32 sm:pt-36 sm:pb-44 text-center">
           <h1 className="font-heading text-4xl sm:text-5xl lg:text-6xl font-bold leading-tight tracking-tight">
-            Nail Your Next Interview
+            {t("dashboard.hero.heading")}
           </h1>
           <p className="mt-4 sm:mt-6 text-base sm:text-lg text-white/70 max-w-xl mx-auto leading-relaxed">
-            Discover trending skills for your target role, practise with voice-driven mock interviews, track your progress over time, and get AI-powered feedback — all from one dashboard.
+            {t("dashboard.hero.subtitle")}
           </p>
           <div className={`mt-8 sm:mt-10 max-w-lg mx-auto transition-all duration-200 ${isLoading ? "pointer-events-none opacity-50" : ""}`}>
             <RoleCombobox value={heroRole} onChange={handleRoleChange} onSubmit={handleStart} variant="hero" />
@@ -590,15 +571,15 @@ export default function Dashboard() {
             <svg className="w-5 h-5 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
             </svg>
-            <h2 className="font-heading text-xl sm:text-2xl font-semibold text-foreground">Trending Skills</h2>
+            <h2 className="font-heading text-xl sm:text-2xl font-semibold text-foreground">{t("dashboard.trending.heading")}</h2>
             <span className="ml-auto text-xs text-muted-foreground bg-muted px-2.5 py-1 rounded-full font-medium whitespace-nowrap">
-              {liveKeywords.length > 0 ? "Live market data" : "General trends"}
+              {liveKeywords.length > 0 ? t("dashboard.trending.live") : t("dashboard.trending.general")}
             </span>
           </div>
           <p className="text-muted-foreground text-sm sm:text-base mb-6">
             {liveKeywords.length > 0
-              ? `Based on current job listings for "${session.role || "your target role"}"`
-              : "Start by typing a role above to fetch live data."}
+              ? t("dashboard.trending.basedOn", { role: session.role || "your target role" })
+              : t("dashboard.trending.genericBasedOn")}
           </p>
 
           {/* Market error banner */}
@@ -645,26 +626,26 @@ export default function Dashboard() {
               </svg>
               <input
                 type="text" value={trendSearch} onChange={(e) => setTrendSearch(e.target.value)}
-                placeholder="Search skills..."
+                placeholder={t("dashboard.trending.searchPlaceholder")}
                 className="w-full pl-9 pr-3 py-2 rounded-lg border border-border bg-white text-sm text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent transition-all duration-200"
               />
             </div>
             <select value={trendFilter} onChange={(e) => setTrendFilter(e.target.value as "all" | "high" | "mid" | "low")}
               className="px-3 py-2 rounded-lg border border-border bg-white text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-accent/40 cursor-pointer transition-all duration-200">
-              <option value="all">All levels</option>
-              <option value="high">High demand (&gt;70)</option>
-              <option value="mid">Medium (40–70)</option>
-              <option value="low">Low (&lt;40)</option>
+              <option value="all">{t("dashboard.trending.filter.all")}</option>
+              <option value="high">{t("dashboard.trending.filter.high")}</option>
+              <option value="mid">{t("dashboard.trending.filter.mid")}</option>
+              <option value="low">{t("dashboard.trending.filter.low")}</option>
             </select>
             <select value={trendSort} onChange={(e) => setTrendSort(e.target.value as "count_desc" | "count_asc" | "name")}
               className="px-3 py-2 rounded-lg border border-border bg-white text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-accent/40 cursor-pointer transition-all duration-200">
-              <option value="count_desc">Highest first</option>
-              <option value="count_asc">Lowest first</option>
-              <option value="name">Alphabetical</option>
+              <option value="count_desc">{t("dashboard.trending.sort.highest")}</option>
+              <option value="count_asc">{t("dashboard.trending.sort.lowest")}</option>
+              <option value="name">{t("dashboard.trending.sort.alpha")}</option>
             </select>
           </div>
           {filteredSortedSkills.length === 0 && (
-            <p className="mt-2 text-xs text-muted-foreground">No skills match your search criteria.</p>
+            <p className="mt-2 text-xs text-muted-foreground">{t("dashboard.trending.noMatch")}</p>
           )}
 
           {/* Keyword Selection Panel */}
@@ -676,10 +657,10 @@ export default function Dashboard() {
                 </svg>
                 <div className="flex-1">
                   <p className="text-sm font-semibold text-foreground">
-                    Select the skills you want to practise in your interview
+                    {t("dashboard.keywords.title")}
                   </p>
                   <p className="text-xs text-muted-foreground mt-0.5">
-                    Choose the most relevant skills for your target role. Top 5 are pre-selected.
+                    {t("dashboard.keywords.subtitle")}
                   </p>
                 </div>
               </div>
@@ -711,13 +692,13 @@ export default function Dashboard() {
                   onClick={handleOpenConfig}
                   className="btn-active px-6 py-2.5 rounded-lg bg-primary hover:bg-primary/90 text-white font-semibold text-sm cursor-pointer transition-all duration-200 hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0"
                 >
-                  Next: Generate Questions ({selectedKeywords.size} skills)
+                  {t("dashboard.keywords.nextBtn", { count: selectedKeywords.size })}
                 </button>
                 <button
                   onClick={handleSkipKeywords}
                   className="btn-active px-4 py-2.5 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground border border-border hover:border-accent cursor-pointer transition-all duration-200"
                 >
-                  Skip → Auto-pick top 5
+                  {t("dashboard.keywords.skipBtn")}
                 </button>
               </div>
               {keywordsMinError && (
@@ -725,7 +706,7 @@ export default function Dashboard() {
                   <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
                   </svg>
-                  Select at least 3 skills to continue.
+                  {t("dashboard.keywords.minError")}
                 </p>
               )}
 
@@ -737,7 +718,7 @@ export default function Dashboard() {
                       <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
                     </svg>
                     <div className="flex-1">
-                      <p className="font-medium">Couldn't generate questions</p>
+                      <p className="font-medium">{t("dashboard.keywords.prepErrorTitle")}</p>
                       <p className="mt-1 text-red-700">{prepError}</p>
                       <button
                         onClick={() => handleConfirmKeywords()}
@@ -746,7 +727,7 @@ export default function Dashboard() {
                         <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                           <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182" />
                         </svg>
-                        Try Again
+                        {t("dashboard.keywords.tryAgain")}
                       </button>
                     </div>
                   </div>
@@ -763,9 +744,9 @@ export default function Dashboard() {
                   <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                 </svg>
                 <div>
-                  <p className="text-sm font-semibold text-foreground">Practise makes progress</p>
+                  <p className="text-sm font-semibold text-foreground">{t("dashboard.idle.title")}</p>
                   <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
-                    Type or select your target role above and click &quot;Start Target Research&quot; to begin an interview simulation.
+                    {t("dashboard.idle.subtitle")}
                   </p>
                 </div>
               </div>
@@ -778,10 +759,10 @@ export default function Dashboard() {
       <section id="how-it-works" className="bg-muted/50 py-16 sm:py-20 scroll-mt-16">
         <div className="max-w-5xl mx-auto px-4 sm:px-6">
           <h2 className="font-heading text-2xl sm:text-3xl font-bold text-center text-foreground">
-            How It Works
+            {t("dashboard.howItWorks.heading")}
           </h2>
           <p className="mt-2 text-muted-foreground text-center max-w-md mx-auto">
-            Three intelligent agents work together to give you an edge.
+            {t("dashboard.howItWorks.subtitle")}
           </p>
 
           <div className="mt-12 grid grid-cols-1 md:grid-cols-5 gap-4 items-center relative">
@@ -797,22 +778,21 @@ export default function Dashboard() {
                 <p className="mt-1.5 text-sm text-muted-foreground max-w-[260px] leading-relaxed">{agent.subtitle}</p>
               </div>
             ))}
-            
           </div>
         </div>
       </section>
 
       {/* ========= WHY FUENZER CAREER ========= */}
       <section className="max-w-5xl mx-auto px-4 sm:px-6 py-16 sm:py-20">
-        <h2 className="font-heading text-2xl sm:text-3xl font-bold text-center text-foreground">Why Fuenzer Career</h2>
+        <h2 className="font-heading text-2xl sm:text-3xl font-bold text-center text-foreground">{t("dashboard.why.heading")}</h2>
         <p className="mt-2 text-muted-foreground text-center max-w-md mx-auto">
-          Built to give you an edge before you step into the room.
+          {t("dashboard.why.subtitle")}
         </p>
         <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6">
           {[
             {
-              title: "Market-Driven Research",
-              desc: "Know which skills employers are looking for in your target role before you walk into the interview.",
+              title: t("dashboard.why.features.market.title"),
+              desc: t("dashboard.why.features.market.desc"),
               icon: (
                 <svg className="w-6 h-6 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 18L9 11.25l4.306 4.307a11.95 11.95 0 015.814-5.519l2.74-1.22m0 0l-5.94-2.28m5.94 2.28l-2.28 5.941" />
@@ -820,8 +800,8 @@ export default function Dashboard() {
               ),
             },
             {
-              title: "Voice Interview Practice",
-              desc: "Practice aloud with realistic questions. Build muscle memory for your actual interview.",
+              title: t("dashboard.why.features.voice.title"),
+              desc: t("dashboard.why.features.voice.desc"),
               icon: (
                 <svg className="w-6 h-6 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 18.75a6 6 0 006-6v-1.5m-6 7.5a6 6 0 01-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 01-3-3V4.5a3 3 0 116 0v8.25a3 3 0 01-3 3z" />
@@ -829,8 +809,8 @@ export default function Dashboard() {
               ),
             },
             {
-              title: "AI-Powered Insights",
-              desc: "Get instant feedback on your confidence, hesitation patterns, and skill alignment.",
+              title: t("dashboard.why.features.ai.title"),
+              desc: t("dashboard.why.features.ai.desc"),
               icon: (
                 <svg className="w-6 h-6 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
@@ -850,8 +830,8 @@ export default function Dashboard() {
       {/* ========= WHAT USERS SAY — Carousel ========= */}
       <section id="testimonials" className="bg-muted/50 py-16 sm:py-20 scroll-mt-16">
         <div className="max-w-5xl mx-auto px-4 sm:px-6">
-          <h2 className="font-heading text-2xl sm:text-3xl font-bold text-center text-foreground">What Users Say</h2>
-          <p className="mt-2 text-muted-foreground text-center max-w-md mx-auto">Hear from people who have used Fuenzer Career.</p>
+          <h2 className="font-heading text-2xl sm:text-3xl font-bold text-center text-foreground">{t("dashboard.testimonials.heading")}</h2>
+          <p className="mt-2 text-muted-foreground text-center max-w-md mx-auto">{t("dashboard.testimonials.subtitle")}</p>
           <div className="mt-12 relative">
             <div className="max-w-lg mx-auto">
               <div className="rounded-xl bg-white border border-border shadow-md p-8 transition-all duration-300">
@@ -874,16 +854,16 @@ export default function Dashboard() {
                   {testimonials.map((_, i) => (
                     <button key={i} onClick={() => { setAutoRotate(false); setTestimonialIndex(i); }}
                       className={`w-2 h-2 rounded-full cursor-pointer transition-all duration-200 ${i === testimonialIndex ? "bg-accent w-4" : "bg-muted hover:bg-accent/40"}`}
-                      aria-label={`Go to testimonial ${i + 1}`} />
+                      aria-label={t("dashboard.testimonials.aria.goTo", { index: i + 1 })} />
                   ))}
                 </div>
                 <div className="flex items-center justify-center gap-3 mt-4">
-                  <button onClick={prevTestimonial} className="p-2 rounded-full bg-muted hover:bg-accent/10 text-muted-foreground hover:text-accent cursor-pointer transition-all duration-200" aria-label="Previous testimonial">
+                  <button onClick={prevTestimonial} className="p-2 rounded-full bg-muted hover:bg-accent/10 text-muted-foreground hover:text-accent cursor-pointer transition-all duration-200" aria-label={t("dashboard.testimonials.aria.prev")}>
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
                     </svg>
                   </button>
-                  <button onClick={nextTestimonial} className="p-2 rounded-full bg-muted hover:bg-accent/10 text-muted-foreground hover:text-accent cursor-pointer transition-all duration-200" aria-label="Next testimonial">
+                  <button onClick={nextTestimonial} className="p-2 rounded-full bg-muted hover:bg-accent/10 text-muted-foreground hover:text-accent cursor-pointer transition-all duration-200" aria-label={t("dashboard.testimonials.aria.next")}>
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
                     </svg>
@@ -897,8 +877,8 @@ export default function Dashboard() {
 
       {/* ========= FAQ SECTION ========= */}
       <section id="faq" className="max-w-2xl mx-auto px-4 sm:px-6 py-16 sm:py-20 scroll-mt-16">
-        <h2 className="font-heading text-2xl sm:text-3xl font-bold text-center text-foreground">Frequently Asked Questions</h2>
-        <p className="mt-2 text-muted-foreground text-center max-w-md mx-auto mb-12">Everything you need to know before getting started.</p>
+        <h2 className="font-heading text-2xl sm:text-3xl font-bold text-center text-foreground">{t("dashboard.faq.heading")}</h2>
+        <p className="mt-2 text-muted-foreground text-center max-w-md mx-auto mb-12">{t("dashboard.faq.subtitle")}</p>
         <div className="space-y-3">
           {faqItems.map((item, i) => {
             const isOpen = openFaq === i;
@@ -931,9 +911,9 @@ export default function Dashboard() {
       {/* ========= BOTTOM CTA ========= */}
       <section className="bg-gradient-to-br from-primary via-primary to-secondary text-on-primary">
         <div className="max-w-2xl mx-auto px-4 sm:px-6 py-16 sm:py-20 text-center">
-          <h2 className="font-heading text-2xl sm:text-3xl lg:text-4xl font-bold leading-tight">Ready to Nail Your Interview?</h2>
+          <h2 className="font-heading text-2xl sm:text-3xl lg:text-4xl font-bold leading-tight">{t("dashboard.cta.heading")}</h2>
           <p className="mt-3 text-sm sm:text-base text-white/70 max-w-lg mx-auto">
-            Start your interview practice today and get AI-powered feedback instantly.
+            {t("dashboard.cta.subtitle")}
           </p>
           <button
             onClick={() => document.getElementById("hero")?.scrollIntoView({ behavior: "smooth" })}
@@ -942,7 +922,7 @@ export default function Dashboard() {
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 19.5v-15m0 0l-6 6m6-6l6 6" />
             </svg>
-            Get Started Now
+            {t("dashboard.cta.button")}
           </button>
         </div>
       </section>
@@ -954,35 +934,35 @@ export default function Dashboard() {
             <div>
               <h3 className="font-heading text-lg font-semibold text-foreground mb-2">Fuenzer Career</h3>
               <p className="text-sm text-muted-foreground leading-relaxed max-w-[240px]">
-                Nail Your Next Interview — practise with voice, get AI feedback, and land the role.
+                {t("dashboard.footer.tagline")}
               </p>
             </div>
             <div>
-              <h4 className="font-heading text-sm font-semibold text-foreground mb-3">Quick Links</h4>
+              <h4 className="font-heading text-sm font-semibold text-foreground mb-3">{t("dashboard.footer.quickLinks")}</h4>
               <ul className="space-y-2">
-                <li><a href="/#trending" onClick={(e) => handleSectionLink(e, "trending", navigate)} className="text-sm text-muted-foreground hover:text-accent transition-colors">Trending Skills</a></li>
-                <li><a href="/#how-it-works" onClick={(e) => handleSectionLink(e, "how-it-works", navigate)} className="text-sm text-muted-foreground hover:text-accent transition-colors">How It Works</a></li>
-                <li><a href="/#testimonials" onClick={(e) => handleSectionLink(e, "testimonials", navigate)} className="text-sm text-muted-foreground hover:text-accent transition-colors">Testimonials</a></li>
-                <li><a href="/#faq" onClick={(e) => handleSectionLink(e, "faq", navigate)} className="text-sm text-muted-foreground hover:text-accent transition-colors">FAQ</a></li>
+                <li><a href="/#trending" onClick={(e) => handleSectionLink(e, "trending", navigate)} className="text-sm text-muted-foreground hover:text-accent transition-colors">{t("nav.trending")}</a></li>
+                <li><a href="/#how-it-works" onClick={(e) => handleSectionLink(e, "how-it-works", navigate)} className="text-sm text-muted-foreground hover:text-accent transition-colors">{t("nav.howItWorks")}</a></li>
+                <li><a href="/#testimonials" onClick={(e) => handleSectionLink(e, "testimonials", navigate)} className="text-sm text-muted-foreground hover:text-accent transition-colors">{t("nav.testimonials")}</a></li>
+                <li><a href="/#faq" onClick={(e) => handleSectionLink(e, "faq", navigate)} className="text-sm text-muted-foreground hover:text-accent transition-colors">{t("nav.faq")}</a></li>
               </ul>
             </div>
             <div>
-              <h4 className="font-heading text-sm font-semibold text-foreground mb-3">Legal</h4>
+              <h4 className="font-heading text-sm font-semibold text-foreground mb-3">{t("dashboard.footer.legal")}</h4>
               <ul className="space-y-2">
                 <li>
                   <Link to="/privacy" className="text-sm text-muted-foreground hover:text-accent transition-colors">
-                    Privacy Policy
+                    {t("dashboard.footer.privacy")}
                   </Link>
                 </li>
                 <li>
                   <Link to="/terms" className="text-sm text-muted-foreground hover:text-accent transition-colors">
-                    Terms of Service
+                    {t("dashboard.footer.terms")}
                   </Link>
                 </li>
               </ul>
             </div>
             <div>
-              <h4 className="font-heading text-sm font-semibold text-foreground mb-3">Connect</h4>
+              <h4 className="font-heading text-sm font-semibold text-foreground mb-3">{t("dashboard.footer.connect")}</h4>
               <ul className="space-y-2">
                 <li>
                   <a href="https://github.com/Yogs4R/fuenzer-career" target="_blank" rel="noopener noreferrer"
@@ -1008,7 +988,7 @@ export default function Dashboard() {
             </div>
           </div>
           <div className="mt-8 pt-6 border-t border-border text-center">
-            <p className="text-xs text-muted-foreground">&copy; {new Date().getFullYear()} Fuenzer Career. All rights reserved.</p>
+            <p className="text-xs text-muted-foreground">{t("dashboard.footer.copyright", { year: new Date().getFullYear() })}</p>
           </div>
         </div>
       </footer>

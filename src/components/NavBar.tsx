@@ -4,6 +4,7 @@ import { handleSectionLink } from "../lib/sectionLink";
 import { useInterviewSession, getGuestHistory, deleteGuestSession, type GuestHistoryItem } from "../lib/InterviewSession";
 import { useAuth } from "../lib/AuthContext";
 import { supabase } from "../lib/supabaseClient";
+import { useTranslation } from "../lib/i18n";
 
 const languages = [
   { code: "EN", label: "English" },
@@ -128,6 +129,7 @@ export default function NavBar() {
   const navigate = useNavigate();
   const { setLanguage } = useInterviewSession();
   const { user, signOut, deleteAccount } = useAuth();
+  const { t } = useTranslation();
   const [lang, setLang] = useState("EN");
   const [langOpen, setLangOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -153,9 +155,8 @@ export default function NavBar() {
   /* ── Alpha announcement (always shown when no DB notifications exist) ── */
   const ALPHA_NOTIFICATION: NotificationItem = {
     id: "alpha-release",
-    title: "🚀 What's New — Database Live!",
-    description:
-      "Practice history and score tracking are now LIVE! Sign in with Google to save your sessions, revisit past evaluation reports, and watch your scores improve over time. Notifications are also active \u2014 we'll keep you posted on new features and updates right here. Thanks for being part of the journey!",
+    title: t("nav.notif.alphaTitle"),
+    description: t("nav.notif.alphaDesc"),
     created_at: new Date().toISOString(),
   };
 
@@ -205,7 +206,7 @@ export default function NavBar() {
   const notifItemsWithAlpha = useMemo<NotificationItem[]>(() => {
     if (notifItems.length === 0) return [ALPHA_NOTIFICATION];
     return notifItems;
-  }, [notifItems]);
+  }, [notifItems, ALPHA_NOTIFICATION]);
 
   const historyTotal = Math.max(1, Math.ceil(historyItems.length / PAGE_SIZE));
   const notifTotal = Math.max(1, Math.ceil(notifItemsWithAlpha.length / PAGE_SIZE));
@@ -250,9 +251,9 @@ export default function NavBar() {
   const handleSignOut = async () => { try { await signOut(); } catch {} setProfileOpen(false); };
 
   const handleDeleteAccount = async () => {
-    if (!window.confirm("Are you sure you want to delete your account? This action cannot be undone.")) return;
+    if (!window.confirm(t("nav.confirmDeleteAccount"))) return;
     setDeleting(true);
-    try { await deleteAccount(); } catch { alert("Failed to delete account. Please try again."); }
+    try { await deleteAccount(); } catch { alert(t("nav.deleteFailed")); }
     finally { setDeleting(false); setProfileOpen(false); }
   };
 
@@ -261,7 +262,7 @@ export default function NavBar() {
       <div className="w-full px-2 sm:px-4 lg:px-6 h-14 flex items-center gap-1 sm:gap-2 relative">
         <button onClick={() => setMobileOpen((p) => !p)}
           className="sm:hidden p-1.5 rounded-md text-white/80 hover:text-white hover:bg-white/10 cursor-pointer transition-all duration-200"
-          aria-label={mobileOpen ? "Close navigation menu" : "Open navigation menu"} aria-expanded={mobileOpen}>
+          aria-label={mobileOpen ? t("nav.aria.closeMenu") : t("nav.aria.openMenu")} aria-expanded={mobileOpen}>
           <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             {mobileOpen ? <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
             : <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />}
@@ -273,19 +274,19 @@ export default function NavBar() {
 
         <div className="hidden sm:flex items-center justify-center flex-1 gap-3 lg:gap-5">
           <a href="/#trending" onClick={(e) => handleSectionLink(e, "trending", navigate)}
-            className="text-white/70 hover:text-white transition-colors duration-200 text-xs lg:text-sm whitespace-nowrap cursor-pointer">Trending</a>
+            className="text-white/70 hover:text-white transition-colors duration-200 text-xs lg:text-sm whitespace-nowrap cursor-pointer">{t("nav.trending")}</a>
           <a href="/#how-it-works" onClick={(e) => handleSectionLink(e, "how-it-works", navigate)}
-            className="text-white/70 hover:text-white transition-colors duration-200 text-xs lg:text-sm whitespace-nowrap cursor-pointer">How It Works</a>
+            className="text-white/70 hover:text-white transition-colors duration-200 text-xs lg:text-sm whitespace-nowrap cursor-pointer">{t("nav.howItWorks")}</a>
           <a href="/#testimonials" onClick={(e) => handleSectionLink(e, "testimonials", navigate)}
-            className="text-white/70 hover:text-white transition-colors duration-200 text-xs lg:text-sm whitespace-nowrap cursor-pointer">Testimonials</a>
+            className="text-white/70 hover:text-white transition-colors duration-200 text-xs lg:text-sm whitespace-nowrap cursor-pointer">{t("nav.testimonials")}</a>
           <a href="/#faq" onClick={(e) => handleSectionLink(e, "faq", navigate)}
-            className="text-white/70 hover:text-white transition-colors duration-200 text-xs lg:text-sm whitespace-nowrap cursor-pointer">FAQ</a>
+            className="text-white/70 hover:text-white transition-colors duration-200 text-xs lg:text-sm whitespace-nowrap cursor-pointer">{t("nav.faq")}</a>
         </div>
 
         <div className="flex items-center gap-1 sm:gap-2 text-sm font-medium text-white/80">
           <button onClick={openHistory}
             className="hidden sm:inline-flex p-1.5 rounded-md text-white/70 hover:text-white hover:bg-white/10 cursor-pointer transition-all duration-200"
-            aria-label="History" title="History">
+            aria-label={t("nav.aria.history")} title={t("nav.history")}>
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
@@ -293,7 +294,7 @@ export default function NavBar() {
 
           <button onClick={openNotif}
             className="hidden sm:inline-flex relative p-1.5 rounded-md text-white/70 hover:text-white hover:bg-white/10 cursor-pointer transition-all duration-200"
-            aria-label="Notifications" title="Notifications">
+            aria-label={t("nav.aria.notifications")} title={t("nav.notifications")}>
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" />
             </svg>
@@ -303,7 +304,7 @@ export default function NavBar() {
           <div ref={langRef} className="relative hidden md:block">
             <button onClick={() => setLangOpen((p) => !p)}
               className="flex items-center gap-1 px-2 py-1.5 rounded-md border border-white/20 text-xs font-semibold cursor-pointer transition-all duration-200 hover:border-white/40 hover:bg-white/10"
-              aria-haspopup="listbox" aria-expanded={langOpen} aria-label="Select language">
+              aria-haspopup="listbox" aria-expanded={langOpen} aria-label={t("nav.aria.langSelect")}>
               <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 017.843 4.582M12 3a8.997 8.997 0 00-7.843 4.582m15.686 0A11.953 11.953 0 0112 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0121 12c0 .778-.099 1.533-.284 2.253m0 0A17.919 17.919 0 0112 16.5c-3.162 0-6.133-.815-8.716-2.247m0 0A9.015 9.015 0 013 12c0-1.605.42-3.113 1.157-4.418" />
               </svg>
@@ -313,7 +314,7 @@ export default function NavBar() {
               </svg>
             </button>
             {langOpen && (
-              <ul role="listbox" aria-label="Select language" className="absolute right-0 mt-1.5 w-44 bg-white rounded-lg shadow-xl border border-border py-1 z-50 overflow-hidden">
+              <ul role="listbox" aria-label={t("nav.aria.langSelect")} className="absolute right-0 mt-1.5 w-44 bg-white rounded-lg shadow-xl border border-border py-1 z-50 overflow-hidden">
                 {languages.map((l) => (
                   <li key={l.code} role="option" aria-selected={lang === l.code}
                     onClick={() => { setLang(l.code); setLangOpen(false); }}
@@ -330,9 +331,9 @@ export default function NavBar() {
             <div ref={profileRef} className="relative">
               <button onClick={() => setProfileOpen((p) => !p)}
                 className="w-8 h-8 rounded-full overflow-hidden border-2 border-white/30 hover:border-white/70 transition-all duration-200 cursor-pointer focus:outline-none focus:ring-2 focus:ring-white/50"
-                aria-label="User profile" aria-expanded={profileOpen}>
+                aria-label={t("nav.aria.userProfile")} aria-expanded={profileOpen}>
                 {userAvatarUrl ? (
-                  <img src={userAvatarUrl} alt={user.user_metadata?.full_name || "Profile"} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                  <img src={userAvatarUrl} alt={user.user_metadata?.full_name || t("nav.guest")} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                 ) : (
                   <div className="w-full h-full bg-accent flex items-center justify-center text-white text-xs font-bold">{userInitials}</div>
                 )}
@@ -341,7 +342,7 @@ export default function NavBar() {
               {profileOpen && (
                 <div className="absolute right-0 mt-2 w-52 bg-white rounded-xl shadow-2xl border border-border py-2 z-50 overflow-hidden">
                   <div className="px-4 py-2 border-b border-border">
-                    <p className="text-sm font-semibold text-foreground truncate">{user.user_metadata?.full_name || "User"}</p>
+                    <p className="text-sm font-semibold text-foreground truncate">{user.user_metadata?.full_name || t("nav.userFallback")}</p>
                     <p className="text-xs text-muted-foreground truncate">{user.email}</p>
                   </div>
                   <button onClick={handleSignOut}
@@ -349,29 +350,29 @@ export default function NavBar() {
                     <svg className="w-4 h-4 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9" />
                     </svg>
-                    Sign Out
+                    {t("nav.signOut")}
                   </button>
                   <button onClick={handleDeleteAccount} disabled={deleting}
                     className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-destructive hover:bg-red-50 cursor-pointer transition-colors disabled:opacity-50">
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
                     </svg>
-                    {deleting ? "Deleting..." : "Delete Account"}
+                    {deleting ? t("nav.deleting") : t("nav.deleteAccount")}
                   </button>
                 </div>
               )}
             </div>
           ) : (
             <>
-              <Link to="/login" className="inline-flex items-center px-2 sm:px-4 py-1 sm:py-1.5 rounded-md border border-white/30 text-white/80 hover:bg-white/10 hover:text-white font-semibold text-xs sm:text-sm cursor-pointer transition-all duration-200">Sign In</Link>
-              <Link to="/signup" className="inline-flex items-center px-2 sm:px-4 py-1 sm:py-1.5 rounded-md bg-accent hover:bg-accent/90 text-white font-semibold text-xs sm:text-sm cursor-pointer transition-all duration-200 hover:-translate-y-0.5 shadow-sm">Sign Up</Link>
+              <Link to="/login" className="inline-flex items-center px-2 sm:px-4 py-1 sm:py-1.5 rounded-md border border-white/30 text-white/80 hover:bg-white/10 hover:text-white font-semibold text-xs sm:text-sm cursor-pointer transition-all duration-200">{t("nav.signIn")}</Link>
+              <Link to="/signup" className="inline-flex items-center px-2 sm:px-4 py-1 sm:py-1.5 rounded-md bg-accent hover:bg-accent/90 text-white font-semibold text-xs sm:text-sm cursor-pointer transition-all duration-200 hover:-translate-y-0.5 shadow-sm">{t("nav.signUp")}</Link>
             </>
           )}
         </div>
       </div>
 
       {/* ── History Modal ── */}
-      <ModalOverlay open={historyOpen} onClose={() => setHistoryOpen(false)} title="Practice History"
+      <ModalOverlay open={historyOpen} onClose={() => setHistoryOpen(false)} title={t("nav.practiceHistory")}
         icon={<svg className="w-5 h-5 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}
         currentPage={historyPage} totalPages={historyTotal} onPageChange={setHistoryPage}>
         {loadingHistory ? (
@@ -388,8 +389,8 @@ export default function NavBar() {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
-            <p className="font-heading text-base font-semibold text-gray-900">No History</p>
-            <p className="text-sm text-gray-500 mt-1 max-w-[200px] mx-auto">Complete an interview and your practice sessions will show up here.</p>
+            <p className="font-heading text-base font-semibold text-gray-900">{t("nav.noHistory")}</p>
+            <p className="text-sm text-gray-500 mt-1 max-w-[200px] mx-auto">{t("nav.noHistoryDesc")}</p>
           </div>
         ) : (
           <ul className="space-y-2">
@@ -427,7 +428,7 @@ export default function NavBar() {
                 >
                   <button onClick={handleDelete}
                     className="shrink-0 p-1.5 rounded-md text-gray-400 hover:text-red-500 hover:bg-red-50 cursor-pointer transition-colors"
-                    aria-label={`Delete ${item.role} session`}
+                    aria-label={t("nav.aria.deleteSession", { role: item.role })}
                     title="Delete">
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
@@ -441,7 +442,7 @@ export default function NavBar() {
                       {new Date(item.created_at).toLocaleDateString()}
                       {isGuest && (
                         <span className="ml-2 text-[10px] uppercase tracking-wider text-accent font-semibold">
-                          Guest
+                          {t("nav.guest")}
                         </span>
                       )}
                     </p>
@@ -457,7 +458,7 @@ export default function NavBar() {
       </ModalOverlay>
 
       {/* ── Notifications Modal ── */}
-      <ModalOverlay open={notifOpen} onClose={() => setNotifOpen(false)} title="Notifications"
+      <ModalOverlay open={notifOpen} onClose={() => setNotifOpen(false)} title={t("nav.notifications")}
         icon={<svg className="w-5 h-5 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" /></svg>}
         currentPage={notifPage} totalPages={notifTotal} onPageChange={setNotifPage}>
         {loadingNotifs ? (
@@ -472,7 +473,7 @@ export default function NavBar() {
             <svg className="w-12 h-12 text-muted-foreground/30 mx-auto mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" />
             </svg>
-            <p className="text-sm text-muted-foreground">No notifications yet.</p>
+            <p className="text-sm text-muted-foreground">{t("nav.noNotifications")}</p>
           </div>
         ) : (
           <ul className="space-y-2">
@@ -489,7 +490,7 @@ export default function NavBar() {
                   </div>
                   <p className={`text-sm text-gray-600 mt-1 transition-all duration-200 ${isExpanded ? "" : "line-clamp-2"}`}>{item.description}</p>
                   <p className="text-xs font-medium text-accent mt-1.5 flex items-center gap-1">
-                    {isExpanded ? "Show less" : "Show more"}
+                    {isExpanded ? t("nav.showLess") : t("nav.showMore")}
                     <svg className={`w-3 h-3 transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
                     </svg>
@@ -508,30 +509,30 @@ export default function NavBar() {
           <div className="fixed top-0 left-0 h-full w-64 bg-white shadow-2xl z-50 sm:hidden flex flex-col animate-slide-in-nav">
             <div className="flex items-center justify-between px-4 h-14 border-b border-border">
               <span className="font-heading text-lg font-semibold text-foreground">Fuenzer Career</span>
-              <button onClick={() => setMobileOpen(false)} className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted cursor-pointer transition-colors" aria-label="Close navigation menu">
+              <button onClick={() => setMobileOpen(false)} className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted cursor-pointer transition-colors" aria-label={t("nav.aria.closeMenu")}>
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
               </button>
             </div>
             <div className="flex-1 px-3 py-4 space-y-1">
               <a href="/#trending" onClick={(e) => { handleSectionLink(e, "trending", navigate); setMobileOpen(false); }}
-                className="block px-3 py-2.5 rounded-lg text-sm font-medium text-foreground hover:bg-muted transition-colors">Trending Skills</a>
+                className="block px-3 py-2.5 rounded-lg text-sm font-medium text-foreground hover:bg-muted transition-colors">{t("nav.trending")}</a>
               <a href="/#how-it-works" onClick={(e) => { handleSectionLink(e, "how-it-works", navigate); setMobileOpen(false); }}
-                className="block px-3 py-2.5 rounded-lg text-sm font-medium text-foreground hover:bg-muted transition-colors">How It Works</a>
+                className="block px-3 py-2.5 rounded-lg text-sm font-medium text-foreground hover:bg-muted transition-colors">{t("nav.howItWorks")}</a>
               <a href="/#testimonials" onClick={(e) => { handleSectionLink(e, "testimonials", navigate); setMobileOpen(false); }}
-                className="block px-3 py-2.5 rounded-lg text-sm font-medium text-foreground hover:bg-muted transition-colors">Testimonials</a>
+                className="block px-3 py-2.5 rounded-lg text-sm font-medium text-foreground hover:bg-muted transition-colors">{t("nav.testimonials")}</a>
               <a href="/#faq" onClick={(e) => { handleSectionLink(e, "faq", navigate); setMobileOpen(false); }}
-                className="block px-3 py-2.5 rounded-lg text-sm font-medium text-foreground hover:bg-muted transition-colors">FAQ</a>
+                className="block px-3 py-2.5 rounded-lg text-sm font-medium text-foreground hover:bg-muted transition-colors">{t("nav.faq")}</a>
             </div>
             <div className="px-3 pb-4 pt-2 border-t border-border space-y-1">
               <button onClick={() => { openHistory(); setMobileOpen(false); }}
                 className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-foreground hover:bg-muted transition-colors cursor-pointer">
                 <svg className="w-5 h-5 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                History
+                {t("nav.history")}
               </button>
               <button onClick={() => { openNotif(); setMobileOpen(false); }}
                 className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-foreground hover:bg-muted transition-colors cursor-pointer">
                 <svg className="w-5 h-5 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" /></svg>
-                Notifications
+                {t("nav.notifications")}
               </button>
             </div>
           </div>
