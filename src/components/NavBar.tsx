@@ -9,6 +9,7 @@ const languages = [
   { code: "EN", label: "English" },
   { code: "ID", label: "Bahasa Indonesia" },
   { code: "JP", label: "日本語" },
+  { code: "ZH", label: "中文" },
   { code: "DE", label: "Deutsch" },
   { code: "FR", label: "Français" },
 ];
@@ -137,7 +138,10 @@ export default function NavBar() {
 
   useEffect(() => {
     const langCode = lang.toLowerCase();
-    if (langCode === "en" || langCode === "id") setLanguage(langCode);
+    const validLangs = ["en", "id", "ja", "zh", "fr", "de"];
+    if (validLangs.includes(langCode)) {
+      setLanguage(langCode as "en" | "id" | "ja" | "zh" | "fr" | "de");
+    }
   }, [lang, setLanguage]);
 
   const [historyOpen, setHistoryOpen] = useState(false);

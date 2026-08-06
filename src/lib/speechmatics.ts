@@ -74,7 +74,7 @@ async function fetchToken(): Promise<string> {
  * @param additionalVocab - role-specific vocabulary to help recognition
  */
 export async function startSpeechmaticsSession(
-  language: "en" | "id" | "ja" | "fr" | "de",
+  language: "en" | "id" | "ja" | "zh" | "fr" | "de",
   onEvent: (event: TranscriptEvent) => void,
   audioChunks: AsyncIterable<ArrayBuffer>,
   additionalVocab?: { content: string; sounds_like?: string[] }[],
@@ -254,6 +254,16 @@ export async function startSpeechmaticsSession(
 const FILLER_WORDS = new Set([
   "um", "uh", "uhh", "umm", "ah", "er", "like", "you know",
   "actually", "basically", "literally", "sort of", "kind of",
+  /* Chinese filler words */
+  "那个", "这个", "呃", "然后", "就是", "嗯",
+  /* Japanese filler words */
+  "えーと", "あの", "その", "まあ", "なんか", "つまり",
+  /* German filler words */
+  "äh", "ähm", "so", "also", "quasi", "halt", "eben", "irgendwie",
+  /* French filler words */
+  "euh", "ben", "quoi", "genre", "voilà", "tu vois",
+  /* Indonesian filler words */
+  "anu", "eee", "apa", "gitu", "gimana", "sih", "deh", "loh",
 ]);
 
 /**
