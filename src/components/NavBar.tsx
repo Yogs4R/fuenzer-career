@@ -9,7 +9,7 @@ import { useTranslation } from "../lib/i18n";
 const languages = [
   { code: "EN", label: "English" },
   { code: "ID", label: "Bahasa Indonesia" },
-  { code: "JP", label: "日本語" },
+  { code: "JA", label: "日本語" },
   { code: "ZH", label: "中文" },
   { code: "DE", label: "Deutsch" },
   { code: "FR", label: "Français" },
