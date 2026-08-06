@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useTranslation } from "../lib/i18n";
 
 const STORAGE_KEY = "fuenzer_cookie_consent";
 const GA_ID = "G-MKSPXBHK42";
@@ -27,6 +28,7 @@ function injectGA() {
 }
 
 export default function CookieConsent() {
+  const { t } = useTranslation();
   const [consent, setConsent] = useState<Consent>(null);
   const [visible, setVisible] = useState(false);
 
@@ -39,8 +41,8 @@ export default function CookieConsent() {
       setConsent("rejected");
     } else {
       /* Show banner after a short delay so the page renders first */
-      const t = setTimeout(() => setVisible(true), 600);
-      return () => clearTimeout(t);
+      const tmr = setTimeout(() => setVisible(true), 600);
+      return () => clearTimeout(tmr);
     }
   }, []);
 
@@ -67,17 +69,16 @@ export default function CookieConsent() {
     >
       <div className="w-full bg-primary/95 backdrop-blur-md border-t border-white/10 px-4 sm:px-6 py-3 sm:py-3.5 flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4">
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-semibold text-white">We value your privacy</p>
+          <p className="text-sm font-semibold text-white">{t("cookie.title")}</p>
           <p className="text-xs sm:text-sm text-white/60 mt-0.5 leading-relaxed">
-            We use Google Analytics to understand how you use Fuenzer Career so we can improve it.
-            Your data is anonymised and never sold.{" "}
+            {t("cookie.description")}{" "}
             <a
               href="/privacy"
               target="_blank"
               rel="noopener noreferrer"
               className="text-blue-300 hover:text-white underline underline-offset-2 transition-colors"
             >
-              Learn more
+              {t("cookie.learnMore")}
             </a>
             .
           </p>
@@ -87,13 +88,13 @@ export default function CookieConsent() {
             onClick={handleReject}
             className="text-sm font-medium text-white/50 hover:text-white cursor-pointer transition-colors duration-200"
           >
-            Reject
+            {t("cookie.reject")}
           </button>
           <button
             onClick={handleAccept}
             className="btn-active px-4 py-1.5 rounded-lg bg-accent hover:bg-accent/90 text-white text-sm font-semibold cursor-pointer transition-all duration-200"
           >
-            Accept
+            {t("cookie.accept")}
           </button>
         </div>
       </div>

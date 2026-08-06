@@ -1,8 +1,10 @@
 import { useNavigate } from "react-router-dom";
 import { usePageTitle } from "../hooks/usePageTitle";
+import { useTranslation } from "../lib/i18n";
 
 export default function NotFound() {
-  usePageTitle("Page Not Found");
+  const { t } = useTranslation();
+  usePageTitle(t("notfound.subheading"));
   const navigate = useNavigate();
 
   return (
@@ -15,12 +17,12 @@ export default function NotFound() {
           </svg>
         </div>
 
-        <h1 className="font-heading text-6xl sm:text-7xl font-bold text-foreground mb-2">404</h1>
+        <h1 className="font-heading text-6xl sm:text-7xl font-bold text-foreground mb-2">{t("notfound.heading")}</h1>
         <p className="font-heading text-xl font-semibold text-muted-foreground mb-4">
-          Page not found
+          {t("notfound.subheading")}
         </p>
         <p className="text-sm text-muted-foreground mb-8 leading-relaxed">
-          The page you're looking for doesn't exist or has been moved. Let's get you back on track.
+          {t("notfound.message")}
         </p>
 
         <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
@@ -32,7 +34,7 @@ export default function NotFound() {
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12l8.954-8.955a1.126 1.126 0 011.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
               </svg>
-              Go to Dashboard
+              {t("notfound.dashboard")}
             </span>
           </button>
           <button
@@ -43,7 +45,7 @@ export default function NotFound() {
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3" />
               </svg>
-              Go Back
+              {t("notfound.goBack")}
             </span>
           </button>
         </div>

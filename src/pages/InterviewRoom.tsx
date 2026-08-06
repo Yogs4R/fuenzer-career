@@ -10,13 +10,7 @@ import {
 } from "../lib/speechmatics";
 import { supabase } from "../lib/supabaseClient";
 import { usePageTitle } from "../hooks/usePageTitle";
-
-const starHints = [
-  { label: "Situation", text: "Describe the context — the project, team, and what made it complex." },
-  { label: "Task", text: "Explain your specific responsibility and what needed to be achieved." },
-  { label: "Action", text: "Walk through the steps you took — tools, techniques, decisions." },
-  { label: "Result", text: "Share the measurable outcome — faster load times, happier users, etc." },
-];
+import { useTranslation } from "../lib/i18n";
 
 type MicState = "idle" | "recording" | "processing";
 
@@ -64,6 +58,7 @@ export default function InterviewRoom() {
   usePageTitle("Interview Room");
   const navigate = useNavigate();
   const { session, addAnswer, setEvaluation, setError, setLoading } = useInterviewSession();
+  const { t } = useTranslation();
 
   const [questionIndex, setQuestionIndex] = useState(0);
   const [micState, setMicState] = useState<MicState>("idle");
@@ -280,12 +275,12 @@ export default function InterviewRoom() {
       cleanupAll();
       setMicState("idle");
       if (err instanceof DOMException && err.name === "NotAllowedError") {
-        setMicError("Microphone access was denied. Type your answer instead.");
+        setMicError(t("interview.mic.error.denied"));
       } else if (err instanceof DOMException && err.name === "NotFoundError") {
-        setMicError("No microphone found. Type your answer instead.");
+        setMicError(t("interview.mic.error.notFound"));
       } else {
-        const msg = err instanceof Error ? err.message : "Failed to start";
-        setMicError(`Voice service temporarily unavailable — ${msg}. Type your answer instead.`);
+        const msg = err instanceof Error ? err.message : t("interview.mic.error.general", { message: "Failed to start" });
+        setMicError(msg);
       }
       setInputMode("text");
       setHasRecording(true);
@@ -532,19 +527,19 @@ export default function InterviewRoom() {
     }
   };
 
-  const getStatusText = () => {
-    if (inputMode === "text" && !micError) return { text: "Type your answer below", color: "text-muted-foreground" };
+  const statusInfo = (() => {
+    if (inputMode === "text" && !micError) return { text: t("interview.status.typeAnswer"), color: "text-muted-foreground" };
     if (micError) return { text: micError, color: "text-amber-600" };
     switch (micState) {
       case "recording":
-        return { text: "Recording... Tap to stop", color: "text-destructive" };
+        return { text: t("interview.status.recording"), color: "text-destructive" };
       case "processing":
-        return { text: "Processing Audio...", color: "text-accent" };
+        return { text: t("interview.status.processing"), color: "text-accent" };
       default:
-        if (hasRecording) return { text: "Answer recorded", color: "text-accent" };
-        return { text: "Tap to start recording", color: "text-muted-foreground" };
+        if (hasRecording) return { text: t("interview.status.recorded"), color: "text-accent" };
+        return { text: t("interview.status.tapToStart"), color: "text-muted-foreground" };
     }
-  };
+  })();
 
   return (
     <div className="min-h-[calc(100vh-3.5rem)] bg-background flex flex-col">
@@ -555,14 +550,14 @@ export default function InterviewRoom() {
             <svg className="w-4 h-4 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
             </svg>
-            <span>Interview Practice</span>
+            <span>{t("interview.topBar.label")}</span>
             <span className="inline-flex items-center gap-1 text-xs font-medium bg-accent/8 text-accent border border-accent/15 px-2 py-0.5 rounded-full">
               <span aria-hidden="true">{currentLanguage.flag}</span>
               {currentLanguage.label}
             </span>
           </div>
           <span className="text-xs font-medium text-muted-foreground bg-muted px-2.5 py-1 rounded-full">
-            Question {questionIndex + 1} of {totalQuestions}
+            {t("interview.topBar.questionCount", { current: questionIndex + 1, total: totalQuestions })}
           </span>
         </div>
       </div>
@@ -575,7 +570,7 @@ export default function InterviewRoom() {
             <div className="flex items-center gap-2 mb-4">
               <span className="w-2 h-2 rounded-full bg-accent animate-pulse" />
               <span className="text-xs font-semibold uppercase tracking-wider text-accent">
-                Interviewer
+                {t("interview.questionCard.interviewer")}
               </span>
             </div>
             <p className="text-lg sm:text-xl text-foreground font-heading font-medium leading-relaxed">
@@ -583,14 +578,14 @@ export default function InterviewRoom() {
             </p>
             <p className="mt-4 text-sm text-muted-foreground border-t border-border pt-4">
               {inputMode === "mic"
-                ? "Take a moment to gather your thoughts, then press the microphone and speak your answer clearly."
-                : "Take a moment to gather your thoughts, then type your answer below."}
+                ? t("interview.questionCard.instructionVoice")
+                : t("interview.questionCard.instructionText")}
             </p>
 
             {/* Live partial transcript during recording */}
             {(micState === "recording" || micState === "processing") && partialTranscript && (
               <div className="mt-4 p-3 rounded-lg bg-muted/40 border border-border/50">
-                <p className="text-xs text-muted-foreground font-medium mb-1">Live transcription</p>
+                <p className="text-xs text-muted-foreground font-medium mb-1">{t("interview.questionCard.liveTranscript")}</p>
                 <p className="text-sm text-foreground italic leading-relaxed">{partialTranscript}</p>
               </div>
             )}
@@ -601,7 +596,7 @@ export default function InterviewRoom() {
               return hasRecording && inputMode === "mic" && micState !== "recording" && micState !== "processing" && displayTranscript.trim() ? (
                 <div className="mt-4 p-3 rounded-lg bg-accent/5 border border-accent/10">
                   <p className="text-xs text-accent font-medium mb-1">
-                    Your answer ({currentFillerCount} filler word{currentFillerCount !== 1 ? "s" : ""})
+                    {t("interview.questionCard.yourAnswer")} ({t("interview.questionCard.fillerWords", { count: currentFillerCount })})
                   </p>
                   <p className="text-sm text-foreground leading-relaxed">{displayTranscript}</p>
                 </div>
@@ -622,20 +617,20 @@ export default function InterviewRoom() {
             {inputMode === "text" && (
               <div className="mt-4">
                 <label htmlFor="text-answer" className="block text-sm font-medium text-foreground mb-2">
-                  Type your answer
+                  {t("interview.textarea.label")}
                 </label>
                 <textarea
                   id="text-answer"
                   rows={5}
-                  placeholder="Type your answer here..."
+                  placeholder={t("interview.textarea.placeholder")}
                   value={textAnswer}
                   onChange={(e) => setTextAnswer(e.target.value)}
                   className="w-full rounded-lg border border-border bg-white px-4 py-3 text-sm text-foreground placeholder-muted-foreground focus-visible:outline-2 focus-visible:outline-ring resize-y"
                 />
                 <p className="mt-1 text-xs text-muted-foreground">
                   {textAnswer.trim().length > 0
-                    ? `${textAnswer.trim().split(/\s+/).length} words`
-                    : "Type your answer above to continue."}
+                    ? t("interview.textarea.words", { count: textAnswer.trim().split(/\s+/).length })
+                    : t("interview.textarea.emptyHint")}
                 </p>
               </div>
             )}
@@ -651,7 +646,7 @@ export default function InterviewRoom() {
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 18v-5.25m0 0a6.01 6.01 0 001.5-.189m-1.5.189a6.01 6.01 0 01-1.5-.189m3.75 7.478a12.06 12.06 0 01-4.5 0m3.75 2.383a14.406 14.406 0 01-3 0M14.25 18v-.192c0-.983.658-1.823 1.508-2.316a7.5 7.5 0 10-7.517 0c.85.493 1.509 1.333 1.509 2.316V18" />
                 </svg>
-                {showHint ? "Hide Hint" : "Need a Hint?"}
+                {showHint ? t("interview.hint.hide") : t("interview.hint.button")}
               </button>
 
               {/* Inline collapsible STAR hints */}
@@ -668,10 +663,15 @@ export default function InterviewRoom() {
                     <svg className="w-4 h-4 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M12 18v-5.25m0 0a6.01 6.01 0 001.5-.189m-1.5.189a6.01 6.01 0 01-1.5-.189m3.75 7.478a12.06 12.06 0 01-4.5 0m3.75 2.383a14.406 14.406 0 01-3 0M14.25 18v-.192c0-.983.658-1.823 1.508-2.316a7.5 7.5 0 10-7.517 0c.85.493 1.509 1.333 1.509 2.316V18" />
                     </svg>
-                    STAR Method Hint
+                    {t("interview.hint.title")}
                   </h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {starHints.map((h) => (
+                    {[
+                      { label: t("interview.hint.star.situation"), text: t("interview.hint.star.situationDesc") },
+                      { label: t("interview.hint.star.task"), text: t("interview.hint.star.taskDesc") },
+                      { label: t("interview.hint.star.action"), text: t("interview.hint.star.actionDesc") },
+                      { label: t("interview.hint.star.result"), text: t("interview.hint.star.resultDesc") },
+                    ].map((h) => (
                       <div key={h.label} className="bg-white rounded-lg p-3 border border-border/50">
                         <span className="text-xs font-bold text-accent uppercase block mb-1">
                           {h.label}
@@ -690,18 +690,18 @@ export default function InterviewRoom() {
                           <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                           <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                         </svg>
-                        Generating personalised hint...
+                        {t("interview.hint.loading")}
                       </div>
                     )}
                     {/* Error state */}
                     {hintError && !hintLoading && (
                       <div className="flex items-center justify-between gap-2 text-sm text-amber-700">
-                        <span>Couldn't generate a hint right now.</span>
+                        <span>{t("interview.hint.error")}</span>
                         <button
                           onClick={() => fetchHint(questions[questionIndex])}
                           className="text-xs font-semibold text-accent hover:text-accent/80 underline cursor-pointer"
                         >
-                          Retry
+                          {t("interview.hint.retry")}
                         </button>
                       </div>
                     )}
@@ -712,7 +712,7 @@ export default function InterviewRoom() {
                           <path strokeLinecap="round" strokeLinejoin="round" d="M12 18v-5.25m0 0a6.01 6.01 0 001.5-.189m-1.5.189a6.01 6.01 0 01-1.5-.189m3.75 7.478a12.06 12.06 0 01-4.5 0m3.75 2.383a14.406 14.406 0 01-3 0M14.25 18v-.192c0-.983.658-1.823 1.508-2.316a7.5 7.5 0 10-7.517 0c.85.493 1.509 1.333 1.509 2.316V18" />
                         </svg>
                         <p className="text-xs sm:text-sm text-foreground leading-relaxed">
-                          <span className="font-semibold">Interviewer Agent Suggestion:</span>{" "}
+                          <span className="font-semibold">{t("interview.hint.suggestionLabel")}</span>{" "}
                           {hintSuggestion}
                         </p>
                       </div>
@@ -725,7 +725,7 @@ export default function InterviewRoom() {
 
           {/* Language tip */}
           <p className="text-xs text-muted-foreground text-center mb-4">
-            Tip: Answer in <span className="font-medium text-accent">{currentLanguage.label}</span> for best evaluation accuracy.
+            {t("interview.tip", { language: currentLanguage.label })}
           </p>
 
           {/* Microphone + Controls */}
@@ -748,10 +748,10 @@ export default function InterviewRoom() {
               className={`btn-active w-20 h-20 sm:w-24 sm:h-24 rounded-full flex items-center justify-center transition-all duration-200 relative cursor-pointer ${getMicButtonClasses()}`}
               aria-label={
                 micState === "recording"
-                  ? "Stop recording"
+                  ? t("interview.mic.aria.stop")
                   : micState === "processing"
-                  ? "Processing audio"
-                  : "Start recording"
+                  ? t("interview.mic.aria.processing")
+                  : t("interview.mic.aria.start")
               }
             >
               {micState === "processing" ? (
@@ -770,8 +770,8 @@ export default function InterviewRoom() {
 
             {/* Status label + Timer + Filler badge */}
             <div className="flex items-center gap-3">
-              <span className={`text-sm font-medium transition-all duration-200 ${getStatusText().color}`}>
-                {getStatusText().text}
+              <span className={`text-sm font-medium transition-all duration-200 ${statusInfo.color}`}>
+                {statusInfo.text}
               </span>
               {micState === "recording" && (
                 <>
@@ -780,7 +780,7 @@ export default function InterviewRoom() {
                   </span>
                   {currentFillerCount > 0 && (
                     <span className="text-xs font-medium text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
-                      {currentFillerCount} filler word{currentFillerCount !== 1 ? "s" : ""}
+                      {t("interview.mic.fillerBadge", { count: currentFillerCount })}
                     </span>
                   )}
                 </>
@@ -805,7 +805,7 @@ export default function InterviewRoom() {
                       <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M3 5h12M9 3v2m0 4a3 3 0 110 6 3 3 0 010-6zm7 4v2m0 4h.01" />
                       </svg>
-                      Type instead
+                      {t("interview.mic.toggleToText")}
                     </>
                   ) : (
                     <>
@@ -813,7 +813,7 @@ export default function InterviewRoom() {
                         <path strokeLinecap="round" strokeLinejoin="round" d="M12 18.5a4.5 4.5 0 004.5-4.5v-6a4.5 4.5 0 00-9 0v6a4.5 4.5 0 004.5 4.5z" />
                         <path strokeLinecap="round" strokeLinejoin="round" d="M19 10v4a7 7 0 01-14 0v-4" />
                       </svg>
-                      Use microphone
+                      {t("interview.mic.toggleToMic")}
                     </>
                   )}
                 </button>
