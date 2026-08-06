@@ -77,7 +77,7 @@ export async function startSpeechmaticsSession(
   language: "en" | "id" | "ja" | "fr" | "de",
   onEvent: (event: TranscriptEvent) => void,
   audioChunks: AsyncIterable<ArrayBuffer>,
-  additionalVocab?: string[],
+  additionalVocab?: { content: string; sounds_like?: string[] }[],
 ): Promise<SpeechmaticsSession> {
   const token = await fetchToken();
   const wsUrl = `wss://eu.rt.speechmatics.com/v2?jwt=${token}`;
@@ -219,8 +219,10 @@ export async function startSpeechmaticsSession(
           console.warn(`[Speechmatics] ${msgType}:`, JSON.stringify(json));
         } else if (msgType === "AudioAdded") {
           // expected — Speechmatics acknowledges audio
+        } else if (msgType === "Info" || msgType === "RecognitionStarted") {
+          console.log(`[Speechmatics] ${msgType}:`, JSON.stringify(json));
         } else {
-          console.log("[Speechmatics] Unhandled message type:", msgType);
+          console.log("[Speechmatics] Unhandled message type:", msgType, JSON.stringify(json));
         }
       } catch (err) {
         console.error("[Speechmatics] Failed to parse message:", err, "raw data:", msg.data?.slice?.(0, 200));

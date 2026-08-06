@@ -229,7 +229,10 @@ export default function InterviewRoom() {
 
       /* 6. Speechmatics session */
       const lang = session.language || "en";
-      const vocab = [session.role, ...session.keywords.map((k) => k.name)].filter(Boolean);
+      /* additional_vocab must be objects: { content: "..." } */
+      const vocab = [session.role, ...session.keywords.map((k) => k.name)]
+        .filter(Boolean)
+        .map((v) => ({ content: v }));
       const smSession = await startSpeechmaticsSession(
         lang as "en" | "id" | "ja" | "fr" | "de",
         (event: TranscriptEvent) => {

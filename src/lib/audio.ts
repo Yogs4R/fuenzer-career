@@ -20,7 +20,8 @@ export interface AudioCapture {
  * its own AudioContext — it expects a pre-existing stream + AudioContext
  * so there is only ONE audio pipeline in the app.
  *
- * Each chunk is ~64 ms of audio (1024 samples at 16 kHz, 16-bit mono).
+ * Each chunk is ~128 ms of audio (2048 samples at 16 kHz, 16-bit mono).
+ * Speechmatics recommends 80–200 ms chunk sizes for optimal recognition.
  */
 export function createAudioCapture(
   audioCtx: AudioContext,
@@ -35,9 +36,10 @@ export function createAudioCapture(
     start(onChunk: (data: ArrayBuffer) => void) {
       console.log(`[Audio] Creating ScriptProcessor — AudioContext state=${audioCtx.state}, sampleRate=${audioCtx.sampleRate}`);
       
-      /* Use ScriptProcessorNode with bufferSize 1024 → ~64 ms at 16 kHz.
+      /* Use ScriptProcessorNode with bufferSize 2048 → ~128 ms at 16 kHz.
+         Speechmatics minimum recommended chunk is 80 ms (1280 samples).
          The browser deprecation warning is cosmetic — the API still works. */
-      processor = audioCtx.createScriptProcessor(1024, 1, 1);
+      processor = audioCtx.createScriptProcessor(2048, 1, 1);
 
       source.connect(processor);
 
