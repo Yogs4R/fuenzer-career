@@ -124,86 +124,87 @@ export async function startSpeechmaticsSession(
     },
   };
 
-  /* ── onopen — send StartRecognition, then stream audio ── */
+  /* ── WebSocket lifecycle ── */
 
-  ws.onopen = () => {
-    /* StartRecognition payload
-       audio_format is REQUIRED for raw PCM; transcription_config is also required. */
-    ws.send(
-      JSON.stringify({
-        message: "StartRecognition",
-        audio_format: {
-          type: "raw",
-          encoding: "pcm_s16le",
-          sample_rate: 16000,
-        },
-        transcription_config: {
-          language: "auto",
-          max_delay: 2,
-          enable_partials: true,
-          additional_vocab: additionalVocab ?? [],
-        },
-      }),
-    );
+  await new Promise<void>((resolveOpen, rejectOpen) => {
+    /* onopen — send StartRecognition, start audio stream, resolve the open promise */
+    ws.onopen = () => {
+      /* 1. StartRecognition (MUST be the very first message) */
+      ws.send(
+        JSON.stringify({
+          message: "StartRecognition",
+          audio_format: {
+            type: "raw",
+            encoding: "pcm_s16le",
+            sample_rate: 16000,
+          },
+          transcription_config: {
+            language: "auto",
+            max_delay: 2,
+            enable_partials: true,
+            additional_vocab: additionalVocab ?? [],
+          },
+        }),
+      );
 
-    /* Stream audio chunks — each chunk increments seqNo */
-    (async () => {
-      for await (const chunk of audioChunks) {
-        if (ws.readyState === WebSocket.OPEN) {
-          ws.send(chunk);
-          seqNo++; // track every audio chunk
+      /* 2. Resolve the open promise so startSpeechmaticsSession returns */
+      resolveOpen();
+
+      /* 3. Stream audio chunks asynchronously — each chunk increments seqNo */
+      (async () => {
+        for await (const chunk of audioChunks) {
+          if (ws.readyState === WebSocket.OPEN) {
+            ws.send(chunk);
+            seqNo++;
+          }
         }
+        /* All chunks sent — flush with EndOfStream */
+        sendEndOfStream();
+      })();
+    };
+
+    /* onmessage — route transcript events */
+    ws.onmessage = (msg) => {
+      try {
+        const json = JSON.parse(msg.data);
+
+        if (json.message === "AddPartialTranscript") {
+          const text =
+            json.results
+              ?.map((r: { transcript: string }) => r.transcript)
+              .join(" ") ?? "";
+          onEvent({ type: "partial", text });
+        } else if (json.message === "AddTranscript") {
+          const text =
+            json.results
+              ?.map((r: { transcript: string }) => r.transcript)
+              .join(" ") ?? "";
+          const words: SpeechmaticsWord[] =
+            json.results?.flatMap(
+              (r: { alternatives: { words: SpeechmaticsWord[] }[] }) =>
+                r.alternatives?.[0]?.words ?? [],
+            ) ?? [];
+          onEvent({ type: "final", text, words });
+        } else if (json.message === "EndOfTranscript") {
+          onEndOfTranscript?.();
+          onEndOfTranscript = null;
+          ws.close();
+        }
+      } catch {
+        /* ignore malformed messages */
       }
-      /* All chunks sent — flush with EndOfStream */
-      sendEndOfStream();
-    })();
-  };
+    };
 
-  /* ── onmessage — route transcript events ── */
+    /* onerror — reject the open promise and close */
+    ws.onerror = () => {
+      rejectOpen(new Error("WebSocket connection failed"));
+      ws.close();
+    };
 
-  ws.onmessage = (msg) => {
-    try {
-      const json = JSON.parse(msg.data);
-
-      if (json.message === "AddPartialTranscript") {
-        const text =
-          json.results
-            ?.map((r: { transcript: string }) => r.transcript)
-            .join(" ") ?? "";
-        onEvent({ type: "partial", text });
-      } else if (json.message === "AddTranscript") {
-        const text =
-          json.results
-            ?.map((r: { transcript: string }) => r.transcript)
-            .join(" ") ?? "";
-        const words: SpeechmaticsWord[] =
-          json.results?.flatMap(
-            (r: { alternatives: { words: SpeechmaticsWord[] }[] }) =>
-              r.alternatives?.[0]?.words ?? [],
-          ) ?? [];
-        onEvent({ type: "final", text, words });
-      } else if (json.message === "EndOfTranscript") {
-        onEndOfTranscript?.();
-        onEndOfTranscript = null;
-        ws.close();
-      }
-    } catch {
-      /* ignore malformed messages */
+    /* Handle the case where the socket is already open (unlikely in practice) */
+    if (ws.readyState === WebSocket.OPEN) {
+      ws.onopen!(new Event("open"));
     }
-  };
-
-  /* ── onerror ── */
-
-  ws.onerror = () => {
-    ws.close();
-  };
-
-  /* ── Wait until the WebSocket is open before returning ── */
-
-  await new Promise<void>((resolve, reject) => {
-    if (ws.readyState === WebSocket.OPEN) resolve();
-    ws.onopen = () => resolve();
-    ws.onerror = () => reject(new Error("WebSocket connection failed"));
   });
 
   return session;
