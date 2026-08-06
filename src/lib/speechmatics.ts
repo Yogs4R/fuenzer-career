@@ -147,7 +147,7 @@ export async function startSpeechmaticsSession(
         message: "StartRecognition",
         audio_format: {
           type: "raw",
-          encoding: "pcm_s16le",
+          encoding: "pcm_f32le",
           sample_rate: 16000,
         },
         transcription_config: {

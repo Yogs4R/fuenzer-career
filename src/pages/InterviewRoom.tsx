@@ -192,8 +192,15 @@ export default function InterviewRoom() {
     setMicState("recording");
 
     try {
-      /* 1. Get mic stream */
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      /* 1. Get mic stream — disable browser processing (echo cancellation,
+         noise suppression, auto gain) which distorts audio for ASR engines. */
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          echoCancellation: false,
+          noiseSuppression: false,
+          autoGainControl: false,
+        },
+      });
       streamRef.current = stream;
 
       /* 2. AudioContext + Analyser for visualiser */
