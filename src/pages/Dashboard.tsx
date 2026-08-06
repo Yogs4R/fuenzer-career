@@ -485,6 +485,22 @@ export default function Dashboard() {
               ? "Still working — fetching live data."
               : "This is taking a while — thanks for your patience."}
           </p>
+
+          {/* Provider credits for hackathon jury */}
+          <div className="mt-6 flex items-center gap-4 text-[10px] text-muted-foreground/60 font-medium tracking-wide">
+            <span className="flex items-center gap-1">
+              <svg className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="4" width="16" height="16" rx="2" /></svg>
+              Brightdata
+            </span>
+            <span className="flex items-center gap-1">
+              <svg className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" /></svg>
+              Speechmatics
+            </span>
+            <span className="flex items-center gap-1">
+              <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="M12 2a10 10 0 1 0 10 10h-10V2z" /></svg>
+              AI/ML API
+            </span>
+          </div>
         </div>
       )}
 

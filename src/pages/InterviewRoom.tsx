@@ -875,6 +875,16 @@ export default function InterviewRoom() {
           <p className="text-sm text-muted-foreground mt-2">
             The AI is evaluating your responses and preparing feedback.
           </p>
+
+          {/* Provider credits for hackathon jury */}
+          <div className="mt-6 flex items-center gap-3 text-[10px] text-muted-foreground/50 font-medium tracking-wide">
+            <span>Powered by</span>
+            <span>Brightdata</span>
+            <span>·</span>
+            <span>Speechmatics</span>
+            <span>·</span>
+            <span>AI/ML API</span>
+          </div>
         </div>
       )}
     </div>

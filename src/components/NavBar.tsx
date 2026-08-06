@@ -112,12 +112,12 @@ function ModalOverlay({
             </svg>
           </button>
         </div>
+        <div className="px-5 py-4 overflow-y-auto flex-1">{children}</div>
         {currentPage && totalPages && totalPages > 1 && (
-          <div className="px-5 pt-3 pb-2 border-b border-border shrink-0">
+          <div className="px-5 pt-3 pb-4 border-t border-border shrink-0 bg-white">
             <PaginationBarFixed current={currentPage} total={totalPages} onChange={onPageChange!} />
           </div>
         )}
-        <div className="px-5 py-4 overflow-y-auto flex-1">{children}</div>
       </div>
     </div>
   );
@@ -430,7 +430,7 @@ export default function NavBar() {
                     </svg>
                   </button>
                   <div className="flex-1 min-w-0">
-                    <p className={`text-sm font-medium truncate ${isGuest ? "text-muted-foreground" : "text-foreground"}`}>
+                    <p className="text-sm font-medium truncate text-foreground">
                       {item.role}
                     </p>
                     <p className="text-xs text-gray-600">
