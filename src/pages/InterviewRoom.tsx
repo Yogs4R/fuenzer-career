@@ -104,6 +104,12 @@ export default function InterviewRoom() {
   /* Track latest answers in a ref so async callbacks never use stale values */
   const answersRef = useRef<QuestionAnswer[]>(session.answers);
   const currentFillerWordsRef = useRef<string[]>([]);
+  /* ⚠️ CRITICAL: fullTranscriptRef accumulates every AddTranscript text
+     synchronously as it arrives from the WebSocket, independent of React
+     batching. submitCurrentAnswer reads from this ref (not the state) so
+     the transcript is never lost — even if state updates are batched or
+     delayed. */
+  const fullTranscriptRef = useRef("");
 
   const questions = session.questions;
   const totalQuestions = questions.length;
@@ -125,6 +131,7 @@ export default function InterviewRoom() {
     setPartialTranscript("");
     setCurrentTranscript("");
     setCurrentFillerCount(0);
+    fullTranscriptRef.current = "";
     setMicError(null);
     setInputMode("mic");
     setTextAnswer("");
@@ -221,7 +228,12 @@ export default function InterviewRoom() {
           if (event.type === "partial") {
             setPartialTranscript(event.text);
           } else if (event.type === "final") {
+            /* Update state for display */
             setCurrentTranscript((prev) => (prev ? prev + " " : "") + event.text);
+            /* ⚠️ CRITICAL: Update ref synchronously too — submitCurrentAnswer
+               reads from this ref (not state) so the transcript is never lost
+               regardless of React batching timing. */
+            fullTranscriptRef.current += (fullTranscriptRef.current ? " " : "") + event.text;
             const filler = countFillerWords(event.words);
             setCurrentFillerCount((prev) => prev + filler.count);
             /* Track actual filler words in a ref so submitCurrentAnswer can read them */
@@ -308,7 +320,11 @@ export default function InterviewRoom() {
   /* ── Submit current answer and advance / finish ── */
   const submitCurrentAnswer = useCallback(() => {
     const isText = inputMode === "text";
-    const answerText = isText ? textAnswer.trim() : currentTranscript.trim();
+    /* Read transcript from the ref, which is updated synchronously
+       as AddTranscript messages arrive — immune to React batching delays.
+       Falls back to currentTranscript state for the display value. */
+    const transcript = fullTranscriptRef.current || currentTranscript;
+    const answerText = isText ? textAnswer.trim() : transcript.trim();
     const fillerCount = isText ? 0 : currentFillerCount;
     const fillerWords: string[] = isText
       ? []
@@ -513,14 +529,17 @@ export default function InterviewRoom() {
             )}
 
             {/* Final transcript after stop */}
-            {hasRecording && inputMode === "mic" && micState !== "recording" && micState !== "processing" && currentTranscript && (
-              <div className="mt-4 p-3 rounded-lg bg-accent/5 border border-accent/10">
-                <p className="text-xs text-accent font-medium mb-1">
-                  Your answer ({currentFillerCount} filler word{currentFillerCount !== 1 ? "s" : ""})
-                </p>
-                <p className="text-sm text-foreground leading-relaxed">{currentTranscript}</p>
-              </div>
-            )}
+            {(() => {
+              const displayTranscript = fullTranscriptRef.current || currentTranscript;
+              return hasRecording && inputMode === "mic" && micState !== "recording" && micState !== "processing" && displayTranscript.trim() ? (
+                <div className="mt-4 p-3 rounded-lg bg-accent/5 border border-accent/10">
+                  <p className="text-xs text-accent font-medium mb-1">
+                    Your answer ({currentFillerCount} filler word{currentFillerCount !== 1 ? "s" : ""})
+                  </p>
+                  <p className="text-sm text-foreground leading-relaxed">{displayTranscript}</p>
+                </div>
+              ) : null;
+            })()}
 
             {/* Mic error banner */}
             {micError && (
