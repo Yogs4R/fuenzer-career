@@ -1,10 +1,13 @@
 /**
  * Speechmatics real-time transcription client.
  *
- * 1. Fetch a short-lived JWT from our Edge Function.
- * 2. Open a WebSocket to the Speechmatics RT endpoint.
- * 3. Stream raw PCM 16 kHz binary chunks.
- * 4. Emit partial and final transcripts with per-word disfluency tags.
+ * Protocol flow:
+ *   1. Fetch a short-lived JWT from our Edge Function.
+ *   2. Open a WebSocket to the Speechmatics RT endpoint.
+ *   3. Send StartRecognition with audio_format + transcription_config.
+ *   4. Stream raw PCM 16 kHz binary chunks, counting each as seqNo.
+ *   5. Send EndOfStream { message, last_seq_no }.
+ *   6. Receive AddPartialTranscript / AddTranscript / EndOfTranscript.
  */
 
 import { supabase } from "./supabaseClient";
@@ -37,13 +40,11 @@ export interface SpeechmaticsSession {
   close: () => void;
   /**
    * Gracefully end the session:
-   * 1. Sends end-of-stream to the server.
-   * 2. Waits for EndOfTranscript (up to `timeoutMs`).
-   * 3. Then closes the WebSocket.
+   *   1. Sends EndOfStream { message, last_seq_no } if not already sent.
+   *   2. Waits for EndOfTranscript (up to `timeoutMs`).
+   *   3. Then closes the WebSocket.
    */
   closeGracefully: (timeoutMs?: number) => Promise<void>;
-  /** Internal: used by the session to signal end-of-stream completion */
-  _endStream: () => void;
 }
 
 /* ── Token fetch ── */
@@ -64,9 +65,9 @@ async function fetchToken(): Promise<string> {
 /**
  * Start a Speechmatics real-time transcription session.
  *
- * @param language - "en" or "id"
- * @param onEvent  - called on each transcript event
- * @param audioChunks - a readable async iterable of ArrayBuffer (PCM S16LE, 16 kHz mono)
+ * @param language      - "en" or "id"
+ * @param onEvent       - called on each transcript event
+ * @param audioChunks   - a readable async iterable of ArrayBuffer (PCM S16LE, 16 kHz mono)
  * @param additionalVocab - role-specific vocabulary to help recognition
  */
 export async function startSpeechmaticsSession(
@@ -80,29 +81,32 @@ export async function startSpeechmaticsSession(
 
   const ws = new WebSocket(wsUrl);
 
-  /* Resolve / reject helpers for the graceful-close promise */
+  /* ── State ── */
+
+  let seqNo = 0;               // incremented for every audio chunk sent
+  let endOfStreamSent = false; // prevents double-sending EndOfStream
   let onEndOfTranscript: (() => void) | null = null;
-  let streamEnded = false;
+
+  /* ── Helper: send EndOfStream with the current seqNo ── */
+
+  function sendEndOfStream() {
+    if (endOfStreamSent) return;
+    endOfStreamSent = true;
+    if (ws.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify({ message: "EndOfStream", last_seq_no: seqNo }));
+    }
+  }
+
+  /* ── Session object ── */
 
   const session: SpeechmaticsSession = {
     close: () => {
       ws.close();
     },
+
     closeGracefully: async (timeoutMs = 3000) => {
-      /* If the stream hasn't sent end_of_stream yet, do it now.
-         Normally the audio-chunk iterator sends it, but if the
-         caller wants to close before the iterator finishes we
-         send it here. */
-      if (!streamEnded) {
-        streamEnded = true;
-        try {
-          if (ws.readyState === WebSocket.OPEN) {
-            ws.send(JSON.stringify({ message: "EndOfStream" }));
-          }
-        } catch {
-          /* socket already closing */
-        }
-      }
+      /* Signal that we're done sending audio */
+      sendEndOfStream();
 
       /* Wait for EndOfTranscript or timeout */
       await new Promise<void>((resolve) => {
@@ -118,64 +122,67 @@ export async function startSpeechmaticsSession(
         ws.close();
       }
     },
-    _endStream: () => {
-      streamEnded = true;
-    },
   };
 
-  ws.onopen = () => {
-    /* StartRecognition payload — use "auto" for language so Speechmatics
-       detects the spoken language automatically (the evaluator handles
-       whichever language Speechmatics transcribes). */
-    const startRecognition: Record<string, unknown> = {
-      message: "StartRecognition",
-      audio_format: {
-        type: "raw",
-        encoding: "pcm_s16le",
-        sample_rate: 16000,
-      },
-      transcription_config: {
-        language: "auto",
-        max_delay: 2,
-        enable_partials: true,
-        additional_vocab: additionalVocab ?? [],
-      },
-    };
-    ws.send(JSON.stringify(startRecognition));
+  /* ── onopen — send StartRecognition, then stream audio ── */
 
-    /* Start streaming audio chunks */
+  ws.onopen = () => {
+    /* StartRecognition payload
+       audio_format is REQUIRED for raw PCM; transcription_config is also required. */
+    ws.send(
+      JSON.stringify({
+        message: "StartRecognition",
+        audio_format: {
+          type: "raw",
+          encoding: "pcm_s16le",
+          sample_rate: 16000,
+        },
+        transcription_config: {
+          language: "auto",
+          max_delay: 2,
+          enable_partials: true,
+          additional_vocab: additionalVocab ?? [],
+        },
+      }),
+    );
+
+    /* Stream audio chunks — each chunk increments seqNo */
     (async () => {
       for await (const chunk of audioChunks) {
         if (ws.readyState === WebSocket.OPEN) {
           ws.send(chunk);
+          seqNo++; // track every audio chunk
         }
       }
-      streamEnded = true;
-      /* Send a separate EndOfStream message (not inside a config object).
-         Speechmatics rejects any payload with an "end_of_stream" field
-         inside SetRecognitionConfig — it must be its own message. */
-      if (ws.readyState === WebSocket.OPEN) {
-        ws.send(JSON.stringify({ message: "EndOfStream" }));
-      }
+      /* All chunks sent — flush with EndOfStream */
+      sendEndOfStream();
     })();
   };
+
+  /* ── onmessage — route transcript events ── */
 
   ws.onmessage = (msg) => {
     try {
       const json = JSON.parse(msg.data);
 
       if (json.message === "AddPartialTranscript") {
-        const text = json.results?.map((r: { transcript: string }) => r.transcript).join(" ") ?? "";
+        const text =
+          json.results
+            ?.map((r: { transcript: string }) => r.transcript)
+            .join(" ") ?? "";
         onEvent({ type: "partial", text });
       } else if (json.message === "AddTranscript") {
-        const text = json.results?.map((r: { transcript: string }) => r.transcript).join(" ") ?? "";
+        const text =
+          json.results
+            ?.map((r: { transcript: string }) => r.transcript)
+            .join(" ") ?? "";
         const words: SpeechmaticsWord[] =
-          json.results?.flatMap((r: { alternatives: { words: SpeechmaticsWord[] }[] }) =>
-            r.alternatives?.[0]?.words ?? [],
+          json.results?.flatMap(
+            (r: { alternatives: { words: SpeechmaticsWord[] }[] }) =>
+              r.alternatives?.[0]?.words ?? [],
           ) ?? [];
         onEvent({ type: "final", text, words });
       } else if (json.message === "EndOfTranscript") {
-        /* Resolve the graceful-close promise if waiting */
         onEndOfTranscript?.();
         onEndOfTranscript = null;
         ws.close();
@@ -185,11 +192,14 @@ export async function startSpeechmaticsSession(
     }
   };
 
+  /* ── onerror ── */
+
   ws.onerror = () => {
     ws.close();
   };
 
-  /* Wait until the socket is open before returning */
+  /* ── Wait until the WebSocket is open before returning ── */
+
   await new Promise<void>((resolve, reject) => {
     if (ws.readyState === WebSocket.OPEN) resolve();
     ws.onopen = () => resolve();
