@@ -61,13 +61,16 @@ export function createAudioCapture(
 
       let chunkCount = 0;
       let firstChunkLogged = false;
+      let peakAmplitude = 0;
       processor.onaudioprocess = (event: AudioProcessingEvent) => {
         const input = event.inputBuffer.getChannelData(0); // Float32 [-1, 1]
         chunkCount++;
-        if (chunkCount === 1 || chunkCount % 100 === 0) {
-          /* Check if audio is actually non-silent */
-          const maxAmp = Math.max(...Array.from(input).map(Math.abs));
-          console.log(`[Audio] Chunk #${chunkCount} — max amplitude=${maxAmp.toFixed(4)}, ${input.byteLength} bytes (float32)`);
+        /* Track peak amplitude across ALL chunks to diagnose quiet mics */
+        const maxAmp = Math.max(...Array.from(input).map(Math.abs));
+        if (maxAmp > peakAmplitude) peakAmplitude = maxAmp;
+        /* Log every 10th chunk (every ~1.28s) so we can see speech bursts */
+        if (chunkCount === 1 || chunkCount % 10 === 0) {
+          console.log(`[Audio] Chunk #${chunkCount} — max=${maxAmp.toFixed(4)}, peak so far=${peakAmplitude.toFixed(4)}, ${input.byteLength} bytes (float32)`);
         }
         /* Log first 10 samples of the first chunk for diagnostics */
         if (!firstChunkLogged) {

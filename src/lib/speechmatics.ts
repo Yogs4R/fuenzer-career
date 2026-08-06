@@ -190,18 +190,25 @@ export async function startSpeechmaticsSession(
         const msgType = json.message;
 
         if (msgType === "AddPartialTranscript") {
+          /* Speechmatics RT v2 nests transcript under results[].alternatives[0].transcript */
           const text =
             json.results
-              ?.map((r: { transcript: string }) => r.transcript)
+              ?.flatMap((r: any) =>
+                r.alternatives?.[0]?.transcript ? [r.alternatives[0].transcript] : [],
+              )
               .join(" ") ?? "";
           if (text.trim()) {
             console.log("[Speechmatics] Partial:", text);
           }
           onEvent({ type: "partial", text });
         } else if (msgType === "AddTranscript") {
+          /* Dump raw JSON for diagnostics — log full message to see exact structure */
+          console.log("[Speechmatics] AddTranscript RAW:", JSON.stringify(json));
           const text =
             json.results
-              ?.map((r: { transcript: string }) => r.transcript)
+              ?.flatMap((r: any) =>
+                r.alternatives?.[0]?.transcript ? [r.alternatives[0].transcript] : [],
+              )
               .join(" ") ?? "";
           const words: SpeechmaticsWord[] =
             json.results?.flatMap(
