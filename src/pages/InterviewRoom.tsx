@@ -199,6 +199,14 @@ export default function InterviewRoom() {
       /* 2. AudioContext + Analyser for visualiser */
       const audioCtx = new AudioContext({ sampleRate: 16000 });
       audioCtxRef.current = audioCtx;
+      /* Ensure context is running (some browsers start suspended even with user gesture) */
+      if (audioCtx.state === "suspended") {
+        console.log("[InterviewRoom] AudioContext suspended — resuming...");
+        await audioCtx.resume();
+        console.log("[InterviewRoom] AudioContext resumed — state:", audioCtx.state, "sampleRate:", audioCtx.sampleRate);
+      } else {
+        console.log("[InterviewRoom] AudioContext running — state:", audioCtx.state, "sampleRate:", audioCtx.sampleRate);
+      }
       const source = audioCtx.createMediaStreamSource(stream);
       sourceRef.current = source;
       const analyser = audioCtx.createAnalyser();
@@ -228,12 +236,14 @@ export default function InterviewRoom() {
           if (event.type === "partial") {
             setPartialTranscript(event.text);
           } else if (event.type === "final") {
+            console.log("[InterviewRoom] onEvent FINAL — text:", event.text, "words:", event.words.length);
             /* Update state for display */
             setCurrentTranscript((prev) => (prev ? prev + " " : "") + event.text);
             /* ⚠️ CRITICAL: Update ref synchronously too — submitCurrentAnswer
                reads from this ref (not state) so the transcript is never lost
                regardless of React batching timing. */
             fullTranscriptRef.current += (fullTranscriptRef.current ? " " : "") + event.text;
+            console.log("[InterviewRoom] fullTranscriptRef.current after append:", JSON.stringify(fullTranscriptRef.current.slice(0, 80)));
             const filler = countFillerWords(event.words);
             setCurrentFillerCount((prev) => prev + filler.count);
             /* Track actual filler words in a ref so submitCurrentAnswer can read them */
@@ -249,10 +259,13 @@ export default function InterviewRoom() {
       smSessionRef.current = smSession;
 
       /* 7. Feed audio into queue */
+      console.log("[InterviewRoom] Starting audio capture...");
       capture.start((chunk: ArrayBuffer) => {
         if (queueRef.current) queueRef.current.push(chunk);
       });
+      console.log("[InterviewRoom] Audio capture started, pipeline is live");
     } catch (err: unknown) {
+      console.error("[InterviewRoom] startRecording failed:", err);
       cleanupAll();
       setMicState("idle");
       if (err instanceof DOMException && err.name === "NotAllowedError") {
@@ -303,6 +316,7 @@ export default function InterviewRoom() {
       smSessionRef.current = null;
     }
 
+    console.log("[InterviewRoom] stopRecording complete — transcript ref:", JSON.stringify(fullTranscriptRef.current.slice(0, 80)), "state:", JSON.stringify(currentTranscript.slice(0, 80)));
     setTimeout(() => {
       setMicState("idle");
       setHasRecording(true);
@@ -324,6 +338,7 @@ export default function InterviewRoom() {
        as AddTranscript messages arrive — immune to React batching delays.
        Falls back to currentTranscript state for the display value. */
     const transcript = fullTranscriptRef.current || currentTranscript;
+    console.log("[InterviewRoom] submitCurrentAnswer — mode:", inputMode, "transcript ref:", JSON.stringify(fullTranscriptRef.current.slice(0, 80)), "state:", JSON.stringify(currentTranscript.slice(0, 80)));
     const answerText = isText ? textAnswer.trim() : transcript.trim();
     const fillerCount = isText ? 0 : currentFillerCount;
     const fillerWords: string[] = isText

@@ -20,7 +20,7 @@ export interface AudioCapture {
  * its own AudioContext — it expects a pre-existing stream + AudioContext
  * so there is only ONE audio pipeline in the app.
  *
- * Each chunk is ~32 ms of audio (1024 samples at 16 kHz, 16-bit mono).
+ * Each chunk is ~64 ms of audio (1024 samples at 16 kHz, 16-bit mono).
  */
 export function createAudioCapture(
   audioCtx: AudioContext,
@@ -33,6 +33,8 @@ export function createAudioCapture(
      requires a separate JS file loaded as a blob. */
   return {
     start(onChunk: (data: ArrayBuffer) => void) {
+      console.log(`[Audio] Creating ScriptProcessor — AudioContext state=${audioCtx.state}, sampleRate=${audioCtx.sampleRate}`);
+      
       /* Use ScriptProcessorNode with bufferSize 1024 → ~64 ms at 16 kHz.
          The browser deprecation warning is cosmetic — the API still works. */
       processor = audioCtx.createScriptProcessor(1024, 1, 1);
@@ -51,17 +53,27 @@ export function createAudioCapture(
       processor.connect(mute);
       mute.connect(audioCtx.destination);
 
+      let chunkCount = 0;
       processor.onaudioprocess = (event: AudioProcessingEvent) => {
         const input = event.inputBuffer.getChannelData(0); // Float32  [-1, 1]
         const int16 = float32ToInt16(input);
+        chunkCount++;
+        if (chunkCount === 1 || chunkCount % 100 === 0) {
+          /* Check if audio is actually non-silent */
+          const maxAmp = Math.max(...Array.from(input).map(Math.abs));
+          console.log(`[Audio] Chunk #${chunkCount} — max amplitude=${maxAmp.toFixed(4)}, ${int16.byteLength} bytes`);
+        }
         onChunk(int16.buffer as ArrayBuffer);
       };
+
+      console.log("[Audio] Capture started, processor connected to destination");
     },
 
     stop() {
       if (processor) {
         try {
           processor.disconnect();
+          console.log("[Audio] Capture stopped — processor disconnected");
         } catch {
           /* already disconnected */
         }

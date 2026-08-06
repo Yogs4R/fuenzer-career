@@ -50,13 +50,16 @@ export interface SpeechmaticsSession {
 /* ── Token fetch ── */
 
 async function fetchToken(): Promise<string> {
+  console.log("[Speechmatics] Fetching token...");
   const { data, error } = await supabase.functions.invoke<{
     token: string;
   }>("speechmatics-token", { method: "POST" });
 
   if (error || !data?.token) {
+    console.error("[Speechmatics] Token fetch failed:", error);
     throw new Error(error?.message ?? "Failed to fetch Speechmatics token");
   }
+  console.log("[Speechmatics] Token received");
   return data.token;
 }
 
@@ -79,6 +82,7 @@ export async function startSpeechmaticsSession(
   const token = await fetchToken();
   const wsUrl = `wss://eu.rt.speechmatics.com/v2?jwt=${token}`;
 
+  console.log("[Speechmatics] Opening WebSocket...");
   const ws = new WebSocket(wsUrl);
 
   /* ── State ── */
@@ -92,6 +96,7 @@ export async function startSpeechmaticsSession(
   function sendEndOfStream() {
     if (endOfStreamSent) return;
     endOfStreamSent = true;
+    console.log(`[Speechmatics] Sending EndOfStream (seqNo=${seqNo})`);
     if (ws.readyState === WebSocket.OPEN) {
       ws.send(JSON.stringify({ message: "EndOfStream", last_seq_no: seqNo }));
     }
@@ -101,6 +106,7 @@ export async function startSpeechmaticsSession(
 
   const session: SpeechmaticsSession = {
     close: () => {
+      console.log("[Speechmatics] Force closing WebSocket");
       ws.close();
     },
 
@@ -109,16 +115,21 @@ export async function startSpeechmaticsSession(
       sendEndOfStream();
 
       /* Wait for EndOfTranscript or timeout */
+      console.log("[Speechmatics] Waiting for EndOfTranscript...");
       await new Promise<void>((resolve) => {
         onEndOfTranscript = resolve;
         setTimeout(() => {
-          onEndOfTranscript = null;
-          resolve();
+          if (onEndOfTranscript) {
+            console.warn("[Speechmatics] EndOfTranscript timed out");
+            onEndOfTranscript = null;
+            resolve();
+          }
         }, timeoutMs);
       });
 
       /* Now close the socket */
       if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING) {
+        console.log("[Speechmatics] Closing WebSocket after EndOfTranscript");
         ws.close();
       }
     },
@@ -129,35 +140,44 @@ export async function startSpeechmaticsSession(
   await new Promise<void>((resolveOpen, rejectOpen) => {
     /* onopen — send StartRecognition, start audio stream, resolve the open promise */
     ws.onopen = () => {
+      console.log("[Speechmatics] WebSocket connected");
+
       /* 1. StartRecognition (MUST be the very first message) */
-      ws.send(
-        JSON.stringify({
-          message: "StartRecognition",
-          audio_format: {
-            type: "raw",
-            encoding: "pcm_s16le",
-            sample_rate: 16000,
-          },
-          transcription_config: {
-            language,
-            max_delay: 2,
-            enable_partials: true,
-            additional_vocab: additionalVocab ?? [],
-          },
-        }),
-      );
+      const startMsg = {
+        message: "StartRecognition",
+        audio_format: {
+          type: "raw",
+          encoding: "pcm_s16le",
+          sample_rate: 16000,
+        },
+        transcription_config: {
+          language,
+          max_delay: 2,
+          enable_partials: true,
+          additional_vocab: additionalVocab ?? [],
+        },
+      };
+      console.log("[Speechmatics] Sending StartRecognition:", JSON.stringify(startMsg));
+      ws.send(JSON.stringify(startMsg));
 
       /* 2. Resolve the open promise so startSpeechmaticsSession returns */
       resolveOpen();
 
       /* 3. Stream audio chunks asynchronously — each chunk increments seqNo */
       (async () => {
+        console.log("[Speechmatics] Starting audio chunk loop...");
+        let chunkCount = 0;
         for await (const chunk of audioChunks) {
           if (ws.readyState === WebSocket.OPEN) {
             ws.send(chunk);
             seqNo++;
+            chunkCount++;
+            if (chunkCount % 50 === 1) {
+              console.log(`[Speechmatics] Sent ${chunkCount} chunks (seqNo=${seqNo}, ${chunk.byteLength} bytes each)`);
+            }
           }
         }
+        console.log(`[Speechmatics] Audio stream ended — ${chunkCount} total chunks sent`);
         /* All chunks sent — flush with EndOfStream */
         sendEndOfStream();
       })();
@@ -167,14 +187,18 @@ export async function startSpeechmaticsSession(
     ws.onmessage = (msg) => {
       try {
         const json = JSON.parse(msg.data);
+        const msgType = json.message;
 
-        if (json.message === "AddPartialTranscript") {
+        if (msgType === "AddPartialTranscript") {
           const text =
             json.results
               ?.map((r: { transcript: string }) => r.transcript)
               .join(" ") ?? "";
+          if (text.trim()) {
+            console.log("[Speechmatics] Partial:", text);
+          }
           onEvent({ type: "partial", text });
-        } else if (json.message === "AddTranscript") {
+        } else if (msgType === "AddTranscript") {
           const text =
             json.results
               ?.map((r: { transcript: string }) => r.transcript)
@@ -184,19 +208,33 @@ export async function startSpeechmaticsSession(
               (r: { alternatives: { words: SpeechmaticsWord[] }[] }) =>
                 r.alternatives?.[0]?.words ?? [],
             ) ?? [];
+          console.log("[Speechmatics] FINAL transcript:", text, `(${words.length} words)`);
           onEvent({ type: "final", text, words });
-        } else if (json.message === "EndOfTranscript") {
+        } else if (msgType === "EndOfTranscript") {
+          console.log("[Speechmatics] EndOfTranscript received");
           onEndOfTranscript?.();
           onEndOfTranscript = null;
           ws.close();
+        } else if (msgType === "Warning" || msgType === "Error") {
+          console.warn(`[Speechmatics] ${msgType}:`, JSON.stringify(json));
+        } else if (msgType === "AudioAdded") {
+          // expected — Speechmatics acknowledges audio
+        } else {
+          console.log("[Speechmatics] Unhandled message type:", msgType);
         }
-      } catch {
-        /* ignore malformed messages */
+      } catch (err) {
+        console.error("[Speechmatics] Failed to parse message:", err, "raw data:", msg.data?.slice?.(0, 200));
       }
     };
 
+    /* onclose — log for diagnostics */
+    ws.onclose = (ev) => {
+      console.log(`[Speechmatics] WebSocket closed — code=${ev.code}, reason=${ev.reason}, wasClean=${ev.wasClean}`);
+    };
+
     /* onerror — reject the open promise and close */
-    ws.onerror = () => {
+    ws.onerror = (ev) => {
+      console.error("[Speechmatics] WebSocket error:", ev);
       rejectOpen(new Error("WebSocket connection failed"));
       ws.close();
     };
