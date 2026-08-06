@@ -38,8 +38,18 @@ export function createAudioCapture(
       processor = audioCtx.createScriptProcessor(1024, 1, 1);
 
       source.connect(processor);
-      /* Do NOT connect to destination — that creates a feedback loop and
-         interferes with TWS / Bluetooth headsets. */
+
+      /* ⚠️ CRITICAL: Connect processor to destination (via a zero-gain node)
+         to keep the audio graph alive. In Chrome and most browsers,
+         onaudioprocess will NOT fire if the ScriptProcessorNode isn't
+         connected to a consumer that terminates at destination — the graph
+         simply stops ticking, no chunks are produced, seqNo stays 0, and
+         Speechmatics returns an empty transcript.
+         Gain=0 prevents any audio feedback through speakers/headphones. */
+      const mute = audioCtx.createGain();
+      mute.gain.value = 0;
+      processor.connect(mute);
+      mute.connect(audioCtx.destination);
 
       processor.onaudioprocess = (event: AudioProcessingEvent) => {
         const input = event.inputBuffer.getChannelData(0); // Float32  [-1, 1]
