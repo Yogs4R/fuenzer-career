@@ -65,13 +65,13 @@ async function fetchToken(): Promise<string> {
 /**
  * Start a Speechmatics real-time transcription session.
  *
- * @param language      - "en" or "id"
+ * @param language      - BCP-47 language code ("en", "id", "ja", "fr", "de")
  * @param onEvent       - called on each transcript event
  * @param audioChunks   - a readable async iterable of ArrayBuffer (PCM S16LE, 16 kHz mono)
  * @param additionalVocab - role-specific vocabulary to help recognition
  */
 export async function startSpeechmaticsSession(
-  language: "en" | "id",
+  language: "en" | "id" | "ja" | "fr" | "de",
   onEvent: (event: TranscriptEvent) => void,
   audioChunks: AsyncIterable<ArrayBuffer>,
   additionalVocab?: string[],
@@ -139,7 +139,7 @@ export async function startSpeechmaticsSession(
             sample_rate: 16000,
           },
           transcription_config: {
-            language: "auto",
+            language,
             max_delay: 2,
             enable_partials: true,
             additional_vocab: additionalVocab ?? [],

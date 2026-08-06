@@ -67,7 +67,7 @@ export interface EvaluationData {
 
 export interface InterviewSessionState {
   role: string;
-  language: "en" | "id";
+  language: "en" | "id" | "ja" | "fr" | "de";
   keywords: Keyword[];
   questions: string[];
   answers: QuestionAnswer[];
@@ -275,7 +275,7 @@ export function InterviewSessionProvider({ children }: { children: ReactNode }) 
     setSession((prev) => ({ ...prev, role }));
   }, []);
 
-  const setLanguage = useCallback((language: "en" | "id") => {
+  const setLanguage = useCallback((language: "en" | "id" | "ja" | "fr" | "de") => {
     setSession((prev) => ({ ...prev, language }));
   }, []);
 

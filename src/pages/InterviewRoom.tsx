@@ -216,7 +216,7 @@ export default function InterviewRoom() {
       const lang = session.language || "en";
       const vocab = [session.role, ...session.keywords.map((k) => k.name)].filter(Boolean);
       const smSession = await startSpeechmaticsSession(
-        lang as "en" | "id",
+        lang as "en" | "id" | "ja" | "fr" | "de",
         (event: TranscriptEvent) => {
           if (event.type === "partial") {
             setPartialTranscript(event.text);
