@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { useInterviewSession, type QuestionAnswer } from "../lib/InterviewSession";
+import { useInterviewSession, type QuestionAnswer, LANGUAGES } from "../lib/InterviewSession";
 import { createAudioCapture, type AudioCapture } from "../lib/audio";
 import {
   startSpeechmaticsSession,
@@ -113,6 +113,7 @@ export default function InterviewRoom() {
 
   const questions = session.questions;
   const totalQuestions = questions.length;
+  const currentLanguage = LANGUAGES.find((l) => l.code === session.language) ?? LANGUAGES[0];
 
   /* Keep answersRef in sync with session.answers — ref never goes stale */
   useEffect(() => {
@@ -555,6 +556,10 @@ export default function InterviewRoom() {
               <path strokeLinecap="round" strokeLinejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
             </svg>
             <span>Interview Practice</span>
+            <span className="inline-flex items-center gap-1 text-xs font-medium bg-accent/8 text-accent border border-accent/15 px-2 py-0.5 rounded-full">
+              <span aria-hidden="true">{currentLanguage.flag}</span>
+              {currentLanguage.label}
+            </span>
           </div>
           <span className="text-xs font-medium text-muted-foreground bg-muted px-2.5 py-1 rounded-full">
             Question {questionIndex + 1} of {totalQuestions}
@@ -717,6 +722,11 @@ export default function InterviewRoom() {
               </div>
             </div>
           </div>
+
+          {/* Language tip */}
+          <p className="text-xs text-muted-foreground text-center mb-4">
+            Tip: Answer in <span className="font-medium text-accent">{currentLanguage.label}</span> for best evaluation accuracy.
+          </p>
 
           {/* Microphone + Controls */}
           <div className="flex flex-col items-center gap-5">
