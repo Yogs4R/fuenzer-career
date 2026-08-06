@@ -1,9 +1,11 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { useNavigate, Link, useLocation } from "react-router-dom";
 import RoleCombobox from "../components/RoleCombobox";
+import InterviewConfigModal from "../components/InterviewConfigModal";
 import { handleSectionLink } from "../lib/sectionLink";
 import { supabase } from "../lib/supabaseClient";
 import { useInterviewSession } from "../lib/InterviewSession";
+import type { Language, Difficulty } from "../lib/InterviewSession";
 import { usePageTitle } from "../hooks/usePageTitle";
 
 /* ── Fallback skills (used when market-agent fails) ── */
@@ -183,8 +185,18 @@ export default function Dashboard() {
   usePageTitle("AI Interview Coach");
   const navigate = useNavigate();
   const location = useLocation();
-  const { session, setRole, setKeywords, setQuestions, setError, reset } =
-    useInterviewSession();
+  const {
+    session,
+    setRole,
+    setLanguage,
+    setDifficulty,
+    setDifficultyCustom,
+    setQuestionCount,
+    setKeywords,
+    setQuestions,
+    setError,
+    reset,
+  } = useInterviewSession();
 
   const [heroRole, setHeroRole] = useState("");
 
@@ -203,6 +215,7 @@ export default function Dashboard() {
   const [testimonialIndex, setTestimonialIndex] = useState(0);
   const [autoRotate, setAutoRotate] = useState(true);
   const [loadingElapsed, setLoadingElapsed] = useState(0);
+  const [showConfigModal, setShowConfigModal] = useState(false);
 
   const isLoading = step === "loading_market" || step === "loading_prep";
 
@@ -369,7 +382,12 @@ export default function Dashboard() {
   };
 
   /* ── Step 2: Generate questions ── */
-  const handleConfirmKeywords = async () => {
+  const handleConfirmKeywords = async (config?: {
+    language: Language;
+    difficulty: Difficulty;
+    difficultyCustom: string;
+    questionCount: number;
+  }) => {
     if (step !== "keyword_selection") return;
     const chosenKeywords = liveKeywords.filter((k) => selectedKeywords.has(k.name));
     if (chosenKeywords.length < 3) {
@@ -389,6 +407,10 @@ export default function Dashboard() {
     setPrepError(null);
     setStep("loading_prep");
 
+    const lang = config?.language ?? session.language ?? "en";
+    const diff = config?.difficulty ?? session.difficulty ?? "junior";
+    const qty = config?.questionCount ?? session.questionCount ?? 5;
+
     const timeoutPromise = new Promise<"timeout">((_, reject) => {
       setTimeout(() => reject(new Error("TIMEOUT")), FETCH_TIMEOUT_MS_PREP);
     });
@@ -399,8 +421,11 @@ export default function Dashboard() {
       }>("interview-prep", {
         body: {
           role: session.role,
-          language: session.language || "en",
+          language: lang,
           keywords: chosenKeywords,
+          difficulty: diff,
+          difficultyCustom: config?.difficultyCustom ?? session.difficultyCustom ?? "",
+          questionCount: qty,
         },
       });
 
@@ -424,6 +449,32 @@ export default function Dashboard() {
       setPrepError(msg);
       setStep("keyword_selection");
     }
+  };
+
+  /* ── Config modal handlers ── */
+  const handleOpenConfig = () => {
+    if (selectedKeywords.size < 3) {
+      setKeywordsMinError(true);
+      return;
+    }
+    setKeywordsMinError(false);
+    setShowConfigModal(true);
+  };
+
+  const handleConfigConfirm = (config: {
+    language: Language;
+    difficulty: Difficulty;
+    difficultyCustom: string;
+    questionCount: number;
+  }) => {
+    /* Update session with config choices */
+    setLanguage(config.language);
+    setDifficulty(config.difficulty);
+    setDifficultyCustom(config.difficultyCustom);
+    setQuestionCount(config.questionCount);
+    setShowConfigModal(false);
+    /* Proceed to generate questions */
+    handleConfirmKeywords(config);
   };
 
   const handleSkipKeywords = async () => {
@@ -457,6 +508,19 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-[calc(100vh-3.5rem)] bg-background">
+      {/* Config Modal */}
+      <InterviewConfigModal
+        open={showConfigModal}
+        role={session.role || heroRole}
+        keywords={liveKeywords.filter((k) => selectedKeywords.has(k.name)).map((k) => k.name)}
+        initialLanguage={session.language ?? "en"}
+        initialDifficulty={session.difficulty ?? "junior"}
+        initialDifficultyCustom={session.difficultyCustom ?? ""}
+        initialQuestionCount={session.questionCount ?? 5}
+        onConfirm={handleConfigConfirm}
+        onCancel={() => setShowConfigModal(false)}
+      />
+
       {/* Loading Overlay */}
       {isLoading && (
         <div className="fixed inset-0 z-50 bg-white/80 backdrop-blur-sm flex flex-col items-center justify-center">
@@ -644,7 +708,7 @@ export default function Dashboard() {
               </div>
               <div className="mt-5 flex items-center gap-3">
                 <button
-                  onClick={handleConfirmKeywords}
+                  onClick={handleOpenConfig}
                   className="btn-active px-6 py-2.5 rounded-lg bg-primary hover:bg-primary/90 text-white font-semibold text-sm cursor-pointer transition-all duration-200 hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0"
                 >
                   Next: Generate Questions ({selectedKeywords.size} skills)
@@ -676,7 +740,7 @@ export default function Dashboard() {
                       <p className="font-medium">Couldn't generate questions</p>
                       <p className="mt-1 text-red-700">{prepError}</p>
                       <button
-                        onClick={handleConfirmKeywords}
+                        onClick={() => handleConfirmKeywords()}
                         className="btn-active mt-2 inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-red-600 hover:bg-red-700 text-white text-xs font-semibold cursor-pointer transition-all duration-200"
                       >
                         <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>

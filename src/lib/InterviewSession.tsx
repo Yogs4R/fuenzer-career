@@ -65,9 +65,33 @@ export interface EvaluationData {
   };
 }
 
+export type Language = "en" | "id" | "ja" | "zh" | "fr" | "de";
+
+export const LANGUAGES: { code: Language; label: string; flag: string }[] = [
+  { code: "en", label: "English", flag: "🇬🇧" },
+  { code: "id", label: "Bahasa Indonesia", flag: "🇮🇩" },
+  { code: "ja", label: "日本語", flag: "🇯🇵" },
+  { code: "zh", label: "中文", flag: "🇨🇳" },
+  { code: "de", label: "Deutsch", flag: "🇩🇪" },
+  { code: "fr", label: "Français", flag: "🇫🇷" },
+];
+
+export type Difficulty = "intern" | "junior" | "senior" | "professional" | "custom";
+
+export const DIFFICULTIES: { value: Difficulty; label: string; description: string }[] = [
+  { value: "intern", label: "Intern", description: "Entry-level, basic knowledge questions" },
+  { value: "junior", label: "Junior", description: "1–3 years of experience" },
+  { value: "senior", label: "Senior", description: "4–8 years, leadership & architecture" },
+  { value: "professional", label: "Professional", description: "8+ years, expert-level depth" },
+  { value: "custom", label: "Custom", description: "Describe your own difficulty level" },
+];
+
 export interface InterviewSessionState {
   role: string;
-  language: "en" | "id" | "ja" | "zh" | "fr" | "de";
+  language: Language;
+  difficulty: Difficulty;
+  difficultyCustom: string;
+  questionCount: number;
   keywords: Keyword[];
   questions: string[];
   answers: QuestionAnswer[];
@@ -80,7 +104,10 @@ export interface InterviewSessionState {
 interface InterviewSessionContextValue {
   session: InterviewSessionState;
   setRole: (role: string) => void;
-  setLanguage: (lang: "en" | "id" | "ja" | "zh" | "fr" | "de") => void;
+  setLanguage: (lang: Language) => void;
+  setDifficulty: (difficulty: Difficulty) => void;
+  setDifficultyCustom: (text: string) => void;
+  setQuestionCount: (count: number) => void;
   setKeywords: (keywords: Keyword[]) => void;
   setQuestions: (questions: string[]) => void;
   addAnswer: (answer: QuestionAnswer) => void;
@@ -98,6 +125,9 @@ const GUEST_HISTORY_KEY = "fuenzer_guest_history";
 const initialState: InterviewSessionState = {
   role: "",
   language: "en",
+  difficulty: "junior",
+  difficultyCustom: "",
+  questionCount: 5,
   keywords: [],
   questions: [],
   answers: [],
@@ -275,8 +305,32 @@ export function InterviewSessionProvider({ children }: { children: ReactNode }) 
     setSession((prev) => ({ ...prev, role }));
   }, []);
 
-  const setLanguage = useCallback((language: "en" | "id" | "ja" | "zh" | "fr" | "de") => {
+  const setLanguage = useCallback((language: Language) => {
     setSession((prev) => ({ ...prev, language }));
+  }, []);
+
+  const setDifficulty = useCallback((difficulty: Difficulty) => {
+    setSession((prev) => {
+      const next = { ...prev, difficulty };
+      if (!prevUserRef.current) saveState(next);
+      return next;
+    });
+  }, []);
+
+  const setDifficultyCustom = useCallback((difficultyCustom: string) => {
+    setSession((prev) => {
+      const next = { ...prev, difficultyCustom };
+      if (!prevUserRef.current) saveState(next);
+      return next;
+    });
+  }, []);
+
+  const setQuestionCount = useCallback((questionCount: number) => {
+    setSession((prev) => {
+      const next = { ...prev, questionCount };
+      if (!prevUserRef.current) saveState(next);
+      return next;
+    });
   }, []);
 
   const setKeywords = useCallback((keywords: Keyword[]) => {
@@ -352,6 +406,9 @@ export function InterviewSessionProvider({ children }: { children: ReactNode }) 
         session,
         setRole,
         setLanguage,
+        setDifficulty,
+        setDifficultyCustom,
+        setQuestionCount,
         setKeywords,
         setQuestions,
         addAnswer,
