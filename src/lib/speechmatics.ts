@@ -190,32 +190,23 @@ export async function startSpeechmaticsSession(
         const msgType = json.message;
 
         if (msgType === "AddPartialTranscript") {
-          /* Speechmatics RT v2 nests transcript under results[].alternatives[0].transcript */
-          const text =
-            json.results
-              ?.flatMap((r: any) =>
-                r.alternatives?.[0]?.transcript ? [r.alternatives[0].transcript] : [],
-              )
-              .join(" ") ?? "";
+          /* Speechmatics RT v2 puts the transcript string under metadata.transcript */
+          const text = json.metadata?.transcript ?? "";
           if (text.trim()) {
             console.log("[Speechmatics] Partial:", text);
           }
           onEvent({ type: "partial", text });
         } else if (msgType === "AddTranscript") {
-          /* Dump raw JSON for diagnostics — log full message to see exact structure */
+          /* Speechmatics RT v2 puts the transcript under metadata.transcript.
+             The results[] array may also be populated with word-level detail. */
           console.log("[Speechmatics] AddTranscript RAW:", JSON.stringify(json));
-          const text =
-            json.results
-              ?.flatMap((r: any) =>
-                r.alternatives?.[0]?.transcript ? [r.alternatives[0].transcript] : [],
-              )
-              .join(" ") ?? "";
+          const text = json.metadata?.transcript ?? "";
           const words: SpeechmaticsWord[] =
             json.results?.flatMap(
               (r: { alternatives: { words: SpeechmaticsWord[] }[] }) =>
                 r.alternatives?.[0]?.words ?? [],
             ) ?? [];
-          console.log("[Speechmatics] FINAL transcript:", text, `(${words.length} words)`);
+          console.log("[Speechmatics] FINAL transcript:", `"${text}"`, `(${words.length} words)`);
           onEvent({ type: "final", text, words });
         } else if (msgType === "EndOfTranscript") {
           console.log("[Speechmatics] EndOfTranscript received");
