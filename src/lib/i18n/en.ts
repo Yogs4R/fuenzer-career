@@ -29,6 +29,7 @@ const en: Record<string, string> = {
   "nav.deleteFailed":
     "Failed to delete account. Please try again.",
   "nav.userFallback": "User",
+  "nav.language": "Language",
   "nav.aria.logo": "Fuenzer Career",
   "nav.aria.langSelect": "Select language",
   "nav.aria.notifications": "Notifications",

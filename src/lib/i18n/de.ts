@@ -24,6 +24,7 @@ const de: Record<string, string> = {
   "nav.confirmDeleteAccount": "Möchtest du dein Konto wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.",
   "nav.deleteFailed": "Konto konnte nicht gelöscht werden. Bitte versuche es erneut.",
   "nav.userFallback": "Benutzer",
+  "nav.language": "Sprache",
   "nav.aria.logo": "Fuenzer Career",
   "nav.aria.langSelect": "Sprache auswählen",
   "nav.aria.notifications": "Benachrichtigungen",

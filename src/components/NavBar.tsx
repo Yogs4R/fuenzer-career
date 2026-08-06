@@ -534,6 +534,25 @@ export default function NavBar() {
                 <svg className="w-5 h-5 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" /></svg>
                 {t("nav.notifications")}
               </button>
+              {/* ── Language picker (mobile) ── */}
+              <div className="pt-1 border-t border-border/50 mt-1">
+                <p className="px-3 pb-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{t("nav.language")}</p>
+                <div className="grid grid-cols-2 gap-1">
+                  {languages.map((l) => (
+                    <button key={l.code} onClick={() => { setLang(l.code); setMobileOpen(false); }}
+                      className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer ${
+                        lang === l.code
+                          ? "bg-accent/10 text-accent"
+                          : "text-foreground hover:bg-muted"
+                      }`}>
+                      <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 ${
+                        lang === l.code ? "bg-accent text-white" : "bg-muted text-muted-foreground"
+                      }`}>{l.code}</span>
+                      <span className="truncate">{l.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
         </>

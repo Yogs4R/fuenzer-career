@@ -28,6 +28,7 @@ const ja: Record<string, string> = {
   "nav.deleteFailed":
     "アカウントの削除に失敗しました。もう一度お試しください。",
   "nav.userFallback": "ユーザー",
+  "nav.language": "言語",
   "nav.aria.logo": "Fuenzer Career",
   "nav.aria.langSelect": "言語を選択",
   "nav.aria.notifications": "通知",

@@ -29,6 +29,7 @@ const id: Record<string, string> = {
   "nav.deleteFailed":
     "Gagal menghapus akun. Silakan coba lagi.",
   "nav.userFallback": "Pengguna",
+  "nav.language": "Bahasa",
   "nav.aria.logo": "Fuenzer Career",
   "nav.aria.langSelect": "Pilih bahasa",
   "nav.aria.notifications": "Notifikasi",

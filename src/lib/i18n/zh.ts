@@ -24,6 +24,7 @@ const zh: Record<string, string> = {
   "nav.confirmDeleteAccount": "确定要删除您的账户吗？此操作无法撤销。",
   "nav.deleteFailed": "删除账户失败，请重试。",
   "nav.userFallback": "用户",
+  "nav.language": "语言",
   "nav.aria.logo": "Fuenzer Career",
   "nav.aria.langSelect": "选择语言",
   "nav.aria.notifications": "通知",

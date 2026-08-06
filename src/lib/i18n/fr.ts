@@ -24,6 +24,7 @@ const fr: Record<string, string> = {
   "nav.confirmDeleteAccount": "Êtes-vous sûr de vouloir supprimer votre compte ? Cette action est irréversible.",
   "nav.deleteFailed": "Échec de la suppression du compte. Veuillez réessayer.",
   "nav.userFallback": "Utilisateur",
+  "nav.language": "Langue",
   "nav.aria.logo": "Fuenzer Career",
   "nav.aria.langSelect": "Sélectionner la langue",
   "nav.aria.notifications": "Notifications",
