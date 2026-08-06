@@ -388,6 +388,24 @@ const ja: Record<string, string> = {
   "privacy.section.5": "5. CookieとGoogle Analytics",
   "privacy.section.6": "6. お問い合わせ",
 
+  /* ── SEO Meta Descriptions ── */
+  "meta.home.desc":
+    "次の面接を成功させよう。音声駆動の模擬面接で練習し、スキルギャップや話し方についてAIフィードバックを取得し、進捗を追跡。無料で始められます。",
+  "meta.interview.desc":
+    "AI生成の質問、リアルタイム音声文字起こし、選択した言語でのSTARメソッドガイダンスで面接スキルを練習しましょう。",
+  "meta.report.desc":
+    "スキルマッチング、話し方のフィードバック、文字起こし分析を含むAI搭載の面接評価レポートを確認しましょう。",
+  "meta.login.desc":
+    "Fuenzer Careerにログインして、面接練習履歴を保存し、スコアを追跡し、過去の評価レポートを再確認しましょう。",
+  "meta.signup.desc":
+    "Fuenzer Careerで無料アカウントを作成して、面接履歴、保存されたレポート、パーソナライズされた通知を利用しましょう。",
+  "meta.terms.desc":
+    "Fuenzer Careerの利用規約 — AI搭載の模擬面接練習プラットフォーム。",
+  "meta.privacy.desc":
+    "Fuenzer Careerのプライバシーポリシー — データの収集、使用、保護方法について。",
+  "meta.notfound.desc":
+    "ページが見つかりません — お探しのページは存在しないか、移動されました。",
+
   /* ── Misc / Shared ── */
   "generic.loading": "読み込み中…",
   "generic.error": "エラーが発生しました",

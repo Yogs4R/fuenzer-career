@@ -16,7 +16,7 @@
  *   Missing keys always fall back to the English (en) dictionary.
  */
 
-import { useInterviewSession, type Language } from "../InterviewSession";
+import { useInterviewSession, type Language } from "./InterviewSession";
 import en from "./i18n/en";
 import id from "./i18n/id";
 import ja from "./i18n/ja";

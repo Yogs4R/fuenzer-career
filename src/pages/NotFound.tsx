@@ -1,10 +1,10 @@
 import { useNavigate } from "react-router-dom";
-import { usePageTitle } from "../hooks/usePageTitle";
+import { useSEOMeta } from "../hooks/useSEOMeta";
 import { useTranslation } from "../lib/i18n";
 
 export default function NotFound() {
   const { t } = useTranslation();
-  usePageTitle(t("notfound.subheading"));
+  useSEOMeta(t("notfound.subheading"), "meta.notfound.desc");
   const navigate = useNavigate();
 
   return (

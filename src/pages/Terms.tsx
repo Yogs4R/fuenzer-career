@@ -1,10 +1,10 @@
 import { Link } from "react-router-dom";
-import { usePageTitle } from "../hooks/usePageTitle";
+import { useSEOMeta } from "../hooks/useSEOMeta";
 import { useTranslation } from "../lib/i18n";
 
 export default function Terms() {
   const { t } = useTranslation();
-  usePageTitle(t("terms.title"));
+  useSEOMeta(t("terms.title"), "meta.terms.desc");
   return (
     <div className="min-h-[calc(100vh-3.5rem)] bg-background py-12 sm:py-16">
       <div className="max-w-3xl mx-auto px-4 sm:px-6">

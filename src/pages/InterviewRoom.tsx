@@ -9,7 +9,7 @@ import {
   type SpeechmaticsSession,
 } from "../lib/speechmatics";
 import { supabase } from "../lib/supabaseClient";
-import { usePageTitle } from "../hooks/usePageTitle";
+import { useSEOMeta } from "../hooks/useSEOMeta";
 import { useTranslation } from "../lib/i18n";
 
 type MicState = "idle" | "recording" | "processing";
@@ -55,7 +55,7 @@ class AudioChunkQueue {
 }
 
 export default function InterviewRoom() {
-  usePageTitle("Interview Room");
+  useSEOMeta("Interview Room", "meta.interview.desc");
   const navigate = useNavigate();
   const { session, addAnswer, setEvaluation, setError, setLoading } = useInterviewSession();
   const { t } = useTranslation();

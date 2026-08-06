@@ -315,6 +315,24 @@ const fr: Record<string, string> = {
   "privacy.section.5": "5. Cookies et Google Analytics",
   "privacy.section.6": "6. Contact",
 
+  /* ── SEO Meta Descriptions ── */
+  "meta.home.desc":
+    "Réussis ton prochain entretien. Entraîne-toi avec des entretiens blancs vocaux, obtiens des retours IA sur les lacunes de compétences et ta prestation, et suis tes progrès. Gratuit pour commencer.",
+  "meta.interview.desc":
+    "Améliore tes compétences d'entretien avec des questions générées par IA, transcription vocale en temps réel et guidance méthode STAR dans la langue de ton choix.",
+  "meta.report.desc":
+    "Consulte ton rapport d'évaluation d'entretien IA avec correspondance des compétences, retour sur ta prestation et analyse de transcription.",
+  "meta.login.desc":
+    "Connecte-toi à Fuenzer Career pour sauvegarder ton historique d'entraînement, suivre tes scores et revoir les rapports d'évaluation passés.",
+  "meta.signup.desc":
+    "Crée un compte gratuit sur Fuenzer Career pour débloquer l'historique des entretiens, les rapports sauvegardés et les notifications personnalisées.",
+  "meta.terms.desc":
+    "Conditions d'utilisation de Fuenzer Career — plateforme d'entraînement aux entretiens blancs alimentée par l'IA.",
+  "meta.privacy.desc":
+    "Politique de confidentialité de Fuenzer Career — découvre comment nous collectons, utilisons et protégeons tes données.",
+  "meta.notfound.desc":
+    "Page introuvable — la page que tu cherches n'existe pas ou a été déplacée.",
+
   "generic.loading": "Chargement…",
   "generic.error": "Une erreur est survenue",
   "generic.retry": "Réessayer",

@@ -390,6 +390,24 @@ const en: Record<string, string> = {
   "role.openList": "Open role list",
   "role.closeList": "Close role list",
 
+  /* ── SEO Meta Descriptions ── */
+  "meta.home.desc":
+    "Ace your next interview. Practise with voice-driven mock interviews, get AI-powered feedback on skill gaps and delivery, and track your progress. Free to start.",
+  "meta.interview.desc":
+    "Practice your interview skills with AI-generated questions, real-time voice transcription, and STAR-method guidance in your chosen language.",
+  "meta.report.desc":
+    "Review your AI-powered interview evaluation report with skill matching, delivery feedback, and transcript analysis.",
+  "meta.login.desc":
+    "Sign in to Fuenzer Career to save your interview practice history, track scores, and revisit past evaluation reports.",
+  "meta.signup.desc":
+    "Create a free account on Fuenzer Career to unlock interview history, saved reports, and personalised notifications.",
+  "meta.terms.desc":
+    "Terms of Service for Fuenzer Career — AI-powered mock interview practice platform.",
+  "meta.privacy.desc":
+    "Privacy Policy for Fuenzer Career — learn how we collect, use, and protect your data.",
+  "meta.notfound.desc":
+    "Page not found — the page you are looking for does not exist or has been moved.",
+
   /* ── Misc / Shared ── */
   "generic.loading": "Loading…",
   "generic.error": "Something went wrong",

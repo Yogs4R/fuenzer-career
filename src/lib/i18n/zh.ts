@@ -315,6 +315,24 @@ const zh: Record<string, string> = {
   "privacy.section.5": "5. Cookie 与 Google Analytics",
   "privacy.section.6": "6. 联系我们",
 
+  /* ── SEO Meta Descriptions ── */
+  "meta.home.desc":
+    "搞定你的下一次面试。通过语音模拟面试练习，获取关于技能差距和表达的 AI 反馈，并追踪你的进步。免费开始。",
+  "meta.interview.desc":
+    "用 AI 生成的问题、实时语音转录和所选语言的 STAR 方法指导来练习你的面试技巧。",
+  "meta.report.desc":
+    "查看你的 AI 驱动面试评估报告，包括技能匹配、表达反馈和转录分析。",
+  "meta.login.desc":
+    "登录 Fuenzer Career 以保存你的面试练习历史、追踪分数并重新查看过去的评估报告。",
+  "meta.signup.desc":
+    "在 Fuenzer Career 上创建免费账户，解锁面试历史、保存的报告和个性化通知。",
+  "meta.terms.desc":
+    "Fuenzer Career 的服务条款 — AI 驱动的模拟面试练习平台。",
+  "meta.privacy.desc":
+    "Fuenzer Career 的隐私政策 — 了解我们如何收集、使用和保护您的数据。",
+  "meta.notfound.desc":
+    "页面未找到 — 您查找的页面不存在或已被移动。",
+
   "generic.loading": "加载中…",
   "generic.error": "出了点问题",
   "generic.retry": "重试",

@@ -6,7 +6,7 @@ import { handleSectionLink } from "../lib/sectionLink";
 import { supabase } from "../lib/supabaseClient";
 import { useInterviewSession } from "../lib/InterviewSession";
 import type { Language, Difficulty } from "../lib/InterviewSession";
-import { usePageTitle } from "../hooks/usePageTitle";
+import { useSEOMeta } from "../hooks/useSEOMeta";
 import { useTranslation } from "../lib/i18n";
 
 /* ── Fallback skills (used when market-agent fails) ── */
@@ -68,7 +68,7 @@ const fallbackSkills = [
 type DashboardStep = "idle" | "loading_market" | "keyword_selection" | "loading_prep" | "done";
 
 export default function Dashboard() {
-  usePageTitle("AI Interview Coach");
+  useSEOMeta("AI Interview Coach", "meta.home.desc");
   const navigate = useNavigate();
   const location = useLocation();
   const { t } = useTranslation();

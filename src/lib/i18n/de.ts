@@ -315,6 +315,24 @@ const de: Record<string, string> = {
   "privacy.section.5": "5. Cookies & Google Analytics",
   "privacy.section.6": "6. Kontakt",
 
+  /* ── SEO Meta Descriptions ── */
+  "meta.home.desc":
+    "Bestehe dein nächstes Vorstellungsgespräch. Übe mit sprachgesteuerten Mock-Interviews, erhalte KI-gestütztes Feedback zu Skill-Lücken und Vortrag und verfolge deine Fortschritte. Kostenloser Start.",
+  "meta.interview.desc":
+    "Trainiere deine Interview-Fähigkeiten mit KI-generierten Fragen, Echtzeit-Sprachtranskription und STAR-Methoden-Anleitung in deiner gewählten Sprache.",
+  "meta.report.desc":
+    "Sieh dir deinen KI-gestützten Interview-Bewertungsbericht mit Skill-Matching, Vortragsfeedback und Transkriptanalyse an.",
+  "meta.login.desc":
+    "Melde dich bei Fuenzer Career an, um deine Interview-Übungshistorie zu speichern, Punktzahlen zu verfolgen und frühere Bewertungsberichte erneut aufzurufen.",
+  "meta.signup.desc":
+    "Erstelle ein kostenloses Konto bei Fuenzer Career, um Interview-Historie, gespeicherte Berichte und personalisierte Benachrichtigungen freizuschalten.",
+  "meta.terms.desc":
+    "Nutzungsbedingungen für Fuenzer Career — KI-gestützte Mock-Interview-Übungsplattform.",
+  "meta.privacy.desc":
+    "Datenschutzerklärung für Fuenzer Career — erfahre, wie wir deine Daten sammeln, verwenden und schützen.",
+  "meta.notfound.desc":
+    "Seite nicht gefunden — die gesuchte Seite existiert nicht oder wurde verschoben.",
+
   "generic.loading": "Wird geladen…",
   "generic.error": "Etwas ist schief gelaufen",
   "generic.retry": "Erneut versuchen",

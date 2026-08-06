@@ -1,12 +1,12 @@
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../lib/AuthContext";
 import { useState } from "react";
-import { usePageTitle } from "../hooks/usePageTitle";
+import { useSEOMeta } from "../hooks/useSEOMeta";
 import { useTranslation } from "../lib/i18n";
 
 export default function Login() {
   const { t } = useTranslation();
-  usePageTitle(t("nav.signIn"));
+  useSEOMeta(t("nav.signIn"), "meta.login.desc");
   const navigate = useNavigate();
   const { signInWithGoogle } = useAuth();
   const [loading, setLoading] = useState(false);

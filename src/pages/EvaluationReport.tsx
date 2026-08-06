@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useInterviewSession, type QuestionAnswer, type EvaluationData, loadGuestSessionData } from "../lib/InterviewSession";
 import { useAuth } from "../lib/AuthContext";
 import { supabase } from "../lib/supabaseClient";
-import { usePageTitle } from "../hooks/usePageTitle";
+import { useSEOMeta } from "../hooks/useSEOMeta";
 import { useTranslation } from "../lib/i18n";
 
 /* ── Animated bar component ── */
@@ -26,7 +26,7 @@ function AnimatedBar({ score, delay }: { score: number; delay: number }) {
 }
 
 export default function EvaluationReport() {
-  usePageTitle("Evaluation Report");
+  useSEOMeta("Evaluation Report", "meta.report.desc");
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const reportId = searchParams.get("id");

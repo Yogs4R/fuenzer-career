@@ -389,6 +389,24 @@ const id: Record<string, string> = {
   "privacy.section.5": "5. Cookies & Google Analytics",
   "privacy.section.6": "6. Kontak",
 
+  /* ── SEO Meta Descriptions ── */
+  "meta.home.desc":
+    "Kuasai wawancara Anda berikutnya. Berlatih dengan wawancara tiruan berbasis suara, dapatkan feedback AI tentang kesenjangan skill dan penyampaian, serta lacak progres Anda. Gratis untuk memulai.",
+  "meta.interview.desc":
+    "Latih kemampuan wawancara Anda dengan pertanyaan buatan AI, transkripsi suara real-time, dan panduan metode STAR dalam bahasa pilihan Anda.",
+  "meta.report.desc":
+    "Tinjau laporan evaluasi wawancara AI Anda dengan kecocokan skill, feedback penyampaian, dan analisis transkrip.",
+  "meta.login.desc":
+    "Masuk ke Fuenzer Career untuk menyimpan riwayat latihan wawancara, melacak skor, dan meninjau kembali laporan evaluasi sebelumnya.",
+  "meta.signup.desc":
+    "Buat akun gratis di Fuenzer Career untuk membuka riwayat wawancara, laporan tersimpan, dan notifikasi personal.",
+  "meta.terms.desc":
+    "Ketentuan Layanan untuk Fuenzer Career — platform latihan wawancara tiruan bertenaga AI.",
+  "meta.privacy.desc":
+    "Kebijakan Privasi untuk Fuenzer Career — pelajari bagaimana kami mengumpulkan, menggunakan, dan melindungi data Anda.",
+  "meta.notfound.desc":
+    "Halaman tidak ditemukan — halaman yang Anda cari tidak ada atau telah dipindahkan.",
+
   /* ── Misc / Shared ── */
   "generic.loading": "Memuat…",
   "generic.error": "Terjadi kesalahan",
