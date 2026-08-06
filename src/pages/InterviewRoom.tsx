@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useInterviewSession, type QuestionAnswer } from "../lib/InterviewSession";
-import { createAudioCapture } from "../lib/audio";
+import { createAudioCapture, type AudioCapture } from "../lib/audio";
 import {
   startSpeechmaticsSession,
   countFillerWords,
@@ -343,15 +343,40 @@ export default function InterviewRoom() {
     setIsEvaluating(true);
     setLoading(true);
     try {
-      /* Use ref to always send the latest answers, even when called
-         immediately after addAnswer before React re-renders */
+      /*
+       * ═══════════════════════════════════════════════════════════════════
+       * CRITICAL TIMING FIX
+       * ──────────────────────────────────────────────────────────────────
+       * handleNext calls submitCurrentAnswer (→ addAnswer → setSession)
+       * then immediately calls handleFinishEvaluation in the same
+       * synchronous execution context. React state hasn't flushed yet,
+       * so answersRef.current is still the OLD array that does NOT
+       * include the latest answer.
+       *
+       * The fix: build the current question's answer directly from refs
+       * (fullTranscriptRef is updated synchronously in onEvent) and
+       * merge it with answersRef.current so the Edge Function always
+       * receives the COMPLETE set of answers.
+       * ═══════════════════════════════════════════════════════════════════
+       */
+      const isText = inputMode === "text";
+      const transcript = fullTranscriptRef.current || currentTranscript;
+      const answerText = isText ? textAnswer.trim() : transcript.trim();
+      const latestAnswer: QuestionAnswer = {
+        question: questions[questionIndex],
+        answer: answerText || "[No answer provided]",
+        fillerCount: isText ? 0 : currentFillerCount,
+        fillerWords: isText ? [] : [...currentFillerWordsRef.current],
+      };
+      const allAnswers = [...answersRef.current, latestAnswer];
+
       const { data, error } = await supabase.functions.invoke("evaluation", {
         body: {
           role: session.role,
           language: session.language || "en",
           keywords: session.keywords,
           questions: session.questions,
-          answers: answersRef.current,
+          answers: allAnswers,
         },
       });
       if (error) throw new Error(error.message);
@@ -363,7 +388,19 @@ export default function InterviewRoom() {
       setLoading(false);
       setIsEvaluating(false);
     }
-  }, [isEvaluating, session, setLoading, setEvaluation, navigate]);
+  }, [
+    isEvaluating,
+    session,
+    setLoading,
+    setEvaluation,
+    navigate,
+    inputMode,
+    textAnswer,
+    currentTranscript,
+    currentFillerCount,
+    questions,
+    questionIndex,
+  ]);
 
   const handleNext = useCallback(() => {
     submitCurrentAnswer();
