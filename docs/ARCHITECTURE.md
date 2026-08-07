@@ -1,130 +1,104 @@
 # Fuenzer Career | Architecture Document
 
+## Table of Contents
+
+- [System Overview](#system-overview)
+- [Component Hierarchy](#component-hierarchy)
+- [State Management](#state-management)
+- [Data Flow — Complete Happy Path](#data-flow--complete-happy-path)
+- [API Contract — Edge Functions](#api-contract--edge-functions)
+- [Database Schema](#database-schema)
+- [Security Architecture](#security-architecture)
+- [Error Handling Strategy](#error-handling-strategy)
+- [Performance Considerations](#performance-considerations)
+- [Key Design Patterns](#key-design-patterns)
+
+---
+
 ## System Overview
 
 Fuenzer Career is a **guest-first, AI-powered interview coaching platform** built on a serverless architecture. The entire backend runs as Supabase Edge Functions (Deno), and the frontend is a single-page React application.
 
-```
-┌─────────────────────────────────────────────────────────────────────┐
-│                        CLIENT (Browser)                             │
-│                                                                     │
-│  ┌─────────────────────────────────────────────────────────────┐   │
-│  │                    React Application                         │   │
-│  │                                                              │   │
-│  │  ┌──────────────────────────────────────────────────────┐   │   │
-│  │  │              InterviewSessionProvider                │   │   │
-│  │  │  (React Context — guest state, localStorage-backed)  │   │   │
-│  │  └────────────────────────┬─────────────────────────────┘   │   │
-│  │                           │                                  │   │
-│  │  ┌──────────┐  ┌─────────┴────────┐  ┌──────────────────┐   │   │
-│  │  │Dashboard │→│  InterviewRoom    │→│ EvaluationReport │   │   │
-│  │  │   (/)    │ │   (/interview)    │ │    (/report)      │   │   │
-│  │  └──────────┘ └──────────────────┘ └──────────────────┘   │   │
-│  │                                                              │   │
-│  │  ┌──────────────────────────────────────────────────────┐   │   │
-│  │  │  UI Infrastructure                                  │   │   │
-│  │  │  ┌──────────┐  ┌──────────────┐  ┌───────────────┐  │   │   │
-│  │  │  │ NavBar   │  │ CookieConsent│  │ RoleCombobox  │  │   │   │
-│  │  │  │ (auth +  │  │ (GA opt-in)  │  │ (typeahead)   │  │   │   │
-│  │  │  │  history)│  │              │  │               │  │   │   │
-│  │  │  └──────────┘  └──────────────┘  └───────────────┘  │   │   │
-│  │  └──────────────────────────────────────────────────────┘   │   │
-│  └─────────────────────────────────────────────────────────────┘   │
-│                           │                                        │
-│              ┌────────────┴────────────┐                          │
-│              │  Supabase Client SDK    │                          │
-│              │  (supabase.functions.   │                          │
-│              │   invoke + auth)        │                          │
-│              └────────────┬────────────┘                          │
-└───────────────────────────┼───────────────────────────────────────┘
-                            │
-┌───────────────────────────┼───────────────────────────────────────┐
-│                    SERVERLESS (Supabase)                          │
-│                                                                   │
-│  ┌───────────────────────────────────────────────────────────┐   │
-│  │                  Edge Functions (Deno)                    │   │
-│  │                                                           │   │
-│  │  ┌──────────────────┐  ┌──────────────────┐              │   │
-│  │  │ market-agent     │  │ interview-prep   │              │   │
-│  │  │ GET /market-data │  │ POST /questions  │              │   │
-│  │  ├──────────────────┤  ├──────────────────┤              │   │
-│  │  │ Scrapes job      │  │ Generates 3-5    │              │   │
-│  │  │ listings → LLM   │  │ contextual       │              │   │
-│  │  │ extracts skills  │  │ interview Qs     │              │   │
-│  │  └────────┬─────────┘  └────────┬─────────┘              │   │
-│  │           │                     │                         │   │
-│  │  ┌────────┴─────────┐  ┌────────┴─────────┐              │   │
-│  │  │ evaluation       │  │ interview-hint   │              │   │
-│  │  │ POST /evaluate   │  │ POST /hint       │              │   │
-│  │  ├──────────────────┤  ├──────────────────┤              │   │
-│  │  │ Scores answers + │  │ STAR-method      │              │   │
-│  │  │ skill match +    │  │ suggestion per   │              │   │
-│  │  │ delivery         │  │ question         │              │   │
-│  │  └────────┬─────────┘  └──────────────────┘              │   │
-│  │           │                                               │   │
-│  │  ┌────────┴─────────┐  ┌──────────────────┐              │   │
-│  │  │ speechmatics-    │  │ delete-user      │              │   │
-│  │  │ token            │  │ POST /delete     │              │   │
-│  │  ├──────────────────┤  ├──────────────────┤              │   │
-│  │  │ Mints short-lived│  │ Admin API call   │              │   │
-│  │  │ JWTs for WS auth │  │ to remove user   │              │   │
-│  │  └────────┬─────────┘  └──────────────────┘              │   │
-│  │           │                                               │   │
-│  └───────────┼───────────────────────────────────────────────┘   │
-│              │                                                    │
-│  ┌───────────┴───────────────────────────────────────────────┐   │
-│  │              Supabase Infrastructure                     │   │
-│  │                                                           │   │
-│  │  ┌──────────────┐  ┌──────────────┐  ┌────────────────┐  │   │
-│  │  │ PostgreSQL   │  │ Secret Mgr   │  │ Auth (Google   │  │   │
-│  │  │ (history,    │  │ (API keys)   │  │  OAuth)        │  │   │
-│  │  │  notifs)     │  │              │  │                │  │   │
-│  │  └──────────────┘  └──────────────┘  └────────────────┘  │   │
-│  └───────────────────────────────────────────────────────────┘   │
-└───────────────────────────────────────────────────────────────────┘
-                            │
-┌───────────────────────────┼───────────────────────────────────────┐
-│                    EXTERNAL SERVICES                              │
-│                                                                   │
-│  ┌──────────────────┐    ┌──────────────────┐                    │
-│  │ Bright Data      │    │ AIMLAPI          │                    │
-│  │ Web Unlocker     │    │ (OpenAI-compat)  │                    │
-│  │ REST API         │    │ deepseek-v4-flash│                    │
-│  └────────┬─────────┘    └────────┬─────────┘                    │
-│           │                       │                              │
-│  ┌────────┴──────────────────────────────────┐                   │
-│  │  Speechmatics Real-Time API               │                   │
-│  │  WebSocket (wss://eu.rt.speechmatics.com) │                   │
-│  │  PCM 16 kHz → transcripts + disfluency    │                   │
-│  └───────────────────────────────────────────┘                   │
-└───────────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TB
+    subgraph Client["CLIENT (Browser)"]
+        subgraph React["React Application"]
+            ISP["InterviewSessionProvider<br/>(React Context — guest state, localStorage-backed)"]
+            D["Dashboard<br/>(/)"] --> ISP
+            IR["InterviewRoom<br/>(/interview)"] --> ISP
+            ER["EvaluationReport<br/>(/report)"] --> ISP
+            subgraph UI["UI Infrastructure"]
+                NB["NavBar<br/>(auth + history)"]
+                CC["CookieConsent<br/>(GA opt-in)"]
+                RC["RoleCombobox<br/>(typeahead)"]
+            end
+        end
+        SCS["Supabase Client SDK<br/>(supabase.functions.invoke + auth)"] --> React
+    end
+
+    subgraph Serverless["SERVERLESS (Supabase)"]
+        subgraph Edge["Edge Functions (Deno)"]
+            MA["market-agent<br/>GET /market-data<br/>Scrapes job listings → LLM extracts skills"]
+            IP["interview-prep<br/>POST /questions<br/>Generates 3-5 contextual interview Qs"]
+            E["evaluation<br/>POST /evaluate<br/>Scores answers + skill match + delivery"]
+            IH["interview-hint<br/>POST /hint<br/>STAR-method suggestion per question"]
+            ST["speechmatics-token<br/>POST /token<br/>Mints short-lived JWTs for WS auth"]
+            DU["delete-user<br/>POST /delete<br/>Admin API call to remove user"]
+        end
+        subgraph Infra["Supabase Infrastructure"]
+            PG[("PostgreSQL<br/>(history, notifications)")]
+            SM[("Secret Manager<br/>(API keys)")]
+            AU[("Auth (Google OAuth)")]
+        end
+    end
+
+    subgraph External["EXTERNAL SERVICES"]
+        BD[("Bright Data<br/>Web Unlocker<br/>REST API")]
+        AML[("AI/ML API<br/>OpenAI-compat<br/>deepseek-v4-flash")]
+        SMX[("Speechmatics<br/>Real-Time API<br/>WebSocket<br/>PCM 16 kHz → transcripts")]
+    end
+
+    Client -->|"supabase.functions.invoke"| Serverless
+    MA -->|"scrapes job listings"| BD
+    MA -->|"LLM extracts skills"| AML
+    IP -->|"generates questions"| AML
+    IH -->|"generates hints"| AML
+    E -->|"scores answers"| AML
+    ST -->|"POST /v1/api_keys?type=rt"| SMX
 ```
 
 ---
 
 ## Component Hierarchy
 
-```
-<BrowserRouter>
-  <AuthProvider>                           ← Supabase auth state
-    <InterviewSessionProvider>             ← Guest interview context
-      <div>
-        <NavBar />                        ← Responsive nav, auth, history, i18n
-        <Routes>
-          <Route "/" → <Dashboard />      ← Landing, 8 sections
-          <Route "/interview" → <InterviewRoom />  ← Voice + transcription
-          <Route "/report" → <EvaluationReport />  ← Score + analysis
-          <Route "/login" → <Login />     ← Google OAuth
-          <Route "/signup" → <SignUp />   ← Registration
-          <Route "/privacy" → <Privacy /> ← Legal
-          <Route "/terms" → <Terms />     ← Legal
-          <Route "*" → <NotFound />       ← 404
-        </Routes>
-        <CookieConsent />                 ← GA opt-in banner
-      </div>
-    </InterviewSessionProvider>
-  </AuthProvider>
-</BrowserRouter>
+```mermaid
+flowchart LR
+    BR["&lt;BrowserRouter&gt;"]
+    AP["&lt;AuthProvider&gt;<br/>Supabase auth state"]
+    ISP["&lt;InterviewSessionProvider&gt;<br/>Guest interview context"]
+    NAV["&lt;NavBar /&gt;<br/>Responsive nav, auth, history, i18n"]
+    CC["&lt;CookieConsent /&gt;<br/>GA opt-in banner"]
+    R1["Route / → Dashboard<br/>Landing, 8 sections"]
+    R2["Route /interview → InterviewRoom<br/>Voice + transcription"]
+    R3["Route /report → EvaluationReport<br/>Score + analysis"]
+    R4["Route /login → Login<br/>Google OAuth"]
+    R5["Route /signup → SignUp<br/>Registration"]
+    R6["Route /privacy → Privacy<br/>Legal"]
+    R7["Route /terms → Terms<br/>Legal"]
+    R8["Route * → NotFound<br/>404"]
+
+    BR --> AP
+    AP --> ISP
+    ISP --> NAV
+    ISP --> R1
+    ISP --> R2
+    ISP --> R3
+    ISP --> R4
+    ISP --> R5
+    ISP --> R6
+    ISP --> R7
+    ISP --> R8
+    ISP --> CC
 ```
 
 ---
@@ -146,7 +120,7 @@ Fuenzer Career is a **guest-first, AI-powered interview coaching platform** buil
 | Property | Type | Persistence |
 |----------|------|-------------|
 | `session.role` | `string` | localStorage |
-| `session.language` | `"en" \| "id"` | localStorage |
+| `session.language` | `"en" \| "de" \| "fr" \| "id" \| "ja" \| "zh"` | localStorage |
 | `session.keywords` | `Keyword[]` | localStorage |
 | `session.questions` | `string[]` | localStorage |
 | `session.answers` | `QuestionAnswer[]` | localStorage |
@@ -163,107 +137,75 @@ Fuenzer Career is a **guest-first, AI-powered interview coaching platform** buil
 
 ### Mic State Machine (local to InterviewRoom)
 
-```
-         ┌──────────┐
-         │   idle   │
-         └────┬─────┘
-              │ click mic
-              ▼
-         ┌──────────┐
-         │recording │── click mic ──→ ┌────────────┐
-         └──────────┘                 │ processing │
-              │                       └──────┬─────┘
-              │ user stops recording         │ 800ms timeout
-              ▼                              ▼
-         ┌──────────┐                 ┌──────────┐
-         │processing│                 │   idle   │
-         └──────────┘                 │ (hasRec= │
-              │                       │  true)   │
-              800ms timeout           └──────────┘
-              ▼
-         ┌──────────┐
-         │   idle   │
-         │ (hasRec= │
-         │  true)   │
-         └──────────┘
+```mermaid
+stateDiagram-v2
+    [*] --> idle
+    idle --> recording: click mic
+    recording --> processing: click mic
+    recording --> processing: user stops recording
+    processing --> idle: 800ms timeout
+    processing --> idle: 800ms timeout (hasRecording=true)
+    idle --> recording: click mic (hasRecording=true)
 ```
 
 ---
 
 ## Data Flow — Complete Happy Path
 
-```
-Step 1: Market Research
-───────────────────────
-Dashboard ──POST──→ market-agent
-                       │
-                       ├── Bright Data: scrapes linkedin.com + indeed.com
-                       │
-                       └── AIMLAPI: "extract trending skills from this text"
-                            → returns { keywords: [{ name, count }] }
+```mermaid
+sequenceDiagram
+    participant User
+    participant Dashboard
+    participant InterviewRoom
+    participant Report as EvaluationReport
+    participant MA as market-agent
+    participant IP as interview-prep
+    participant ST as speechmatics-token
+    participant Eval as evaluation
+    participant BD as Bright Data
+    participant AML as AI/ML API
+    participant SMX as Speechmatics
 
-Dashboard ←─── keywords ───
-  ↓
-  Renders trending skills carousel + keyword selection chips
+    Note over User, SMX: Step 1: Market Research
+    User->>Dashboard: Enter role
+    Dashboard->>MA: POST /market-data
+    MA->>BD: Scrape LinkedIn + Indeed
+    BD-->>MA: Raw HTML
+    MA->>AML: Extract trending skills
+    AML-->>MA: { keywords }
+    MA-->>Dashboard: keywords[]
 
+    Note over User, SMX: Step 2: Question Generation
+    User->>Dashboard: Select keywords
+    Dashboard->>IP: POST /questions
+    IP->>AML: Generate 3-5 questions
+    AML-->>IP: { questions }
+    IP-->>Dashboard: questions[]
+    Dashboard-->>User: Navigate to /interview
 
-Step 2: Question Generation
-───────────────────────────
-Dashboard ──POST──→ interview-prep
-                       │
-                       └── AIMLAPI: "generate 3-5 interview questions for {role}
-                            focusing on {keywords}"
-                            → returns { questions: [string] }
+    Note over User, SMX: Step 3: Voice Interview
+    InterviewRoom->>ST: POST /token
+    ST->>SMX: POST /v1/api_keys?type=rt
+    SMX-->>ST: { token: "jwt" }
+    ST-->>InterviewRoom: { token }
+    InterviewRoom->>SMX: WebSocket wss://...?jwt=<token>
+    User->>InterviewRoom: Speak
+    InterviewRoom->>SMX: Stream PCM 16 kHz
+    SMX-->>InterviewRoom: AddPartialTranscript (live captions)
+    SMX-->>InterviewRoom: AddTranscript (final + disfluency)
+    InterviewRoom->>SMX: EndOfStream
+    SMX-->>InterviewRoom: EndOfTranscript
 
-Dashboard ←─── questions ───
-  ↓
-  Navigate to /interview
+    Note over User, SMX: Step 4: Evaluation
+    User->>InterviewRoom: Finish & Get Result
+    InterviewRoom->>Eval: POST /evaluate
+    Eval->>AML: Score answers
+    AML-->>Eval: { overallScore, perQuestion, skillMatch, delivery }
+    Eval-->>InterviewRoom: evaluation data
+    InterviewRoom-->>User: Navigate to /report
 
-
-Step 3: Voice Interview
-───────────────────────
-InterviewRoom ──POST──→ speechmatics-token
-                           │
-                           └── Speechmatics API: POST /v1/api_keys?type=rt
-                                → returns { token: "short-lived-jwt" }
-
-←── token ──
-
-InterviewRoom ──WebSocket──→ wss://eu.rt.speechmatics.com/v2?jwt=<token>
-  │  streams PCM 16 kHz binary chunks
-  │
-  ├── receives: AddPartialTranscript (live captions)
-  ├── receives: AddTranscript (finalized text + disfluency tags)
-  │
-  └── on stop → SetRecognitionConfig { end_of_stream }
-       → EndOfTranscript → close WS
-
-Per-question: { question, answer, fillerCount, fillerWords[] }
-
-
-Step 4: Evaluation
-──────────────────
-InterviewRoom ──POST──→ evaluation
-                           │
-                           └── AIMLAPI: "score these answers for {role} in {language},
-                                compare against {keywords}"
-                                → returns { overallScore, perQuestion[], skillMatch, delivery }
-
-←── evaluation data ──
-  ↓
-  Navigate to /report
-
-
-Step 5: Report
-─────────────
-EvaluationReport renders:
-  - Circular score gauge (SVG with animated dashoffset)
-  - Summary + badges
-  - Skill Match (matched vs. missing skills)
-  - Per-question breakdown cards with animated bars
-  - Transcript pagination
-  - Filler word analysis with bar charts
-  - Recommendations
+    Note over User, SMX: Step 5: Report
+    Report-->>User: Score gauge, per-question breakdown, skill match, filler analysis
 ```
 
 ---
@@ -387,20 +329,40 @@ CREATE INDEX idx_notifications_user ON notifications(user_id, created_at DESC);
 
 ### Secrets Management
 
-```
-┌─────────────────────────────────────────────┐
-│              Supabase Secret Manager         │
-│                                             │
-│  BRIGHT_DATA_API_TOKEN   → market-agent     │
-│  AIMLAPI_API_KEY         → all LLM agents   │
-│  SPEECHMATICS_API_KEY    → speechmatics-    │
-│                            token only       │
-└─────────────────────────────────────────────┘
-         │                    │
-         │ never leaves       │ never leaves
-         │ Edge Function      │ Edge Function
-         ▼                    ▼
-  Bright Data API        AIMLAPI API
+```mermaid
+flowchart LR
+    subgraph SM["Supabase Secret Manager"]
+        BDK["BRIGHT_DATA_API_TOKEN"]
+        AAK["AIMLAPI_API_KEY"]
+        SPK["SPEECHMATICS_API_KEY"]
+    end
+
+    subgraph Functions["Edge Functions"]
+        MA["market-agent"]
+        IP["interview-prep"]
+        IH["interview-hint"]
+        E["evaluation"]
+        ST["speechmatics-token"]
+    end
+
+    subgraph Services["External Services"]
+        BD["Bright Data API"]
+        AML["AI/ML API"]
+        SMX["Speechmatics API"]
+    end
+
+    BDK --> MA
+    AAK --> MA
+    AAK --> IP
+    AAK --> IH
+    AAK --> E
+    SPK --> ST
+    MA --> BD
+    MA --> AML
+    IP --> AML
+    IH --> AML
+    E --> AML
+    ST -->|"mints 60s JWT"| SMX
 ```
 
 **Rules:**
@@ -416,9 +378,11 @@ Every Edge Function implements:
 
 ### Auth Flow
 
-```
-Guest:  → No auth → Full app access → Session in localStorage → Optional sign-up later
-Auth:   → Google OAuth → Supabase session → History saved to DB → Profile/notifications
+```mermaid
+flowchart LR
+    Guest["Guest<br/>→ No auth<br/>→ Full app access<br/>→ Session in localStorage<br/>→ Optional sign-up later"]
+    Auth["Auth<br/>→ Google OAuth<br/>→ Supabase session<br/>→ History saved to DB<br/>→ Profile/notifications"]
+    Guest -->|"sign in"| Auth
 ```
 
 ---
