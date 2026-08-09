@@ -1,44 +1,97 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../lib/supabaseClient";
 
 export default function AuthCallback() {
   const navigate = useNavigate();
   const [status, setStatus] = useState<"processing" | "error">("processing");
+  const handledRef = useRef(false);
 
   useEffect(() => {
+    if (handledRef.current) return;
+
     let cancelled = false;
 
-    // Register the listener. The SDK emits INITIAL_SESSION (with the
-    // current session) to every registered listener asynchronously after
-    // initializePromise resolves — this catches the case where SIGNED_IN
-    // was already emitted before the listener was registered.
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((event, session) => {
+    async function handleCallback() {
+      // 1. First check if a session already exists (URL hash may have been
+      //    processed by the client during initialization).
+      const {
+        data: { session: existingSession },
+      } = await supabase.auth.getSession();
+
       if (cancelled) return;
-      if (session && (event === "SIGNED_IN" || event === "INITIAL_SESSION")) {
-        subscription.unsubscribe();
+
+      if (existingSession) {
+        handledRef.current = true;
         window.history.replaceState(
           window.history.state,
           "",
           window.location.pathname,
         );
         navigate("/", { replace: true });
+        return;
       }
-    });
 
-    // Timeout: if the listener hasn't fired after 12s, show the error page.
-    const timeoutId = setTimeout(() => {
-      if (!cancelled) {
-        subscription.unsubscribe();
-        setStatus("error");
-      }
-    }, 12000);
+      // 2. No session yet — listen for it via onAuthStateChange.
+      //    The SDK emits INITIAL_SESSION to every newly registered listener,
+      //    so this catches cases where the session was stored between the
+      //    client init and the component mount.
+      const {
+        data: { subscription },
+      } = supabase.auth.onAuthStateChange((event, session) => {
+        if (cancelled || handledRef.current) return;
+        if (
+          session &&
+          (event === "SIGNED_IN" || event === "INITIAL_SESSION")
+        ) {
+          handledRef.current = true;
+          subscription.unsubscribe();
+          window.history.replaceState(
+            window.history.state,
+            "",
+            window.location.pathname,
+          );
+          navigate("/", { replace: true });
+        }
+      });
+
+      // 3. Also re-check getSession after a short tick to handle edge cases
+      //    where the event fires but the session reference is stale.
+      const retryTimer = setTimeout(async () => {
+        if (cancelled || handledRef.current) return;
+        const {
+          data: { session: retrySession },
+        } = await supabase.auth.getSession();
+        if (retrySession && !cancelled && !handledRef.current) {
+          handledRef.current = true;
+          subscription.unsubscribe();
+          window.history.replaceState(
+            window.history.state,
+            "",
+            window.location.pathname,
+          );
+          navigate("/", { replace: true });
+        }
+      }, 2000);
+
+      // 4. Timeout: if nothing picks up the session after 15s, show the error.
+      const timeoutId = setTimeout(() => {
+        if (!cancelled && !handledRef.current) {
+          subscription.unsubscribe();
+          setStatus("error");
+        }
+      }, 15000);
+
+      return () => {
+        clearTimeout(retryTimer);
+        clearTimeout(timeoutId);
+      };
+    }
+
+    handleCallback();
 
     return () => {
       cancelled = true;
-      clearTimeout(timeoutId);
     };
   }, [navigate]);
 
@@ -65,7 +118,7 @@ export default function AuthCallback() {
             Sign-in incomplete
           </h2>
           <p className="text-muted-foreground text-sm mb-6">
-            We couldn't finish signing you in. This is often caused by a
+            We couldn&apos;t finish signing you in. This is often caused by a
             misconfiguration — try again or contact support.
           </p>
           <button
