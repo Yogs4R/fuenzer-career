@@ -10,25 +10,15 @@ export default function AuthCallback() {
     let cancelled = false;
 
     async function handleCallback() {
-      // With implicit flow, the Supabase SDK automatically detects
-      // the hash fragment (#access_token=...) on page load and creates
-      // a session. We just need to wait for it.
-
-      // 1. The SDK may have already processed the hash — check now.
-      const { data } = await supabase.auth.getSession();
-      if (!cancelled && data?.session) {
-        navigate("/", { replace: true });
-        return;
-      }
-
-      // 2. Listen for the SIGNED_IN event — it fires once the SDK
-      //    finishes processing the hash.
+      // 1. Register the listener FIRST — before any async checks.
+      //    This prevents a race where the SDK finishes processing the hash
+      //    between our getSession() call and registering the listener.
       const {
         data: { subscription },
       } = supabase.auth.onAuthStateChange((event, session) => {
-        if (!cancelled && session && event === "SIGNED_IN") {
+        if (cancelled) return;
+        if (session && event === "SIGNED_IN") {
           subscription.unsubscribe();
-          // Clean hash from URL so it doesn't linger
           window.history.replaceState(
             window.history.state,
             "",
@@ -38,13 +28,26 @@ export default function AuthCallback() {
         }
       });
 
-      // 3. Timeout: if nothing happens after 8 seconds, something is wrong.
+      // 2. Now check — the SDK may have already processed the hash.
+      const { data } = await supabase.auth.getSession();
+      if (!cancelled && data?.session) {
+        subscription.unsubscribe();
+        window.history.replaceState(
+          window.history.state,
+          "",
+          window.location.pathname,
+        );
+        navigate("/", { replace: true });
+        return;
+      }
+
+      // 3. Timeout: if neither getSession nor the listener fired after 10s.
       setTimeout(() => {
         if (!cancelled) {
           subscription.unsubscribe();
           setStatus("error");
         }
-      }, 8000);
+      }, 10000);
     }
 
     handleCallback();
