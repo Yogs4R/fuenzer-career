@@ -9,28 +9,15 @@ export default function AuthCallback() {
   useEffect(() => {
     let cancelled = false;
 
-    async function handleCallback() {
-      // 1. Register the listener FIRST — before any async checks.
-      //    This prevents a race where the SDK finishes processing the hash
-      //    between our getSession() call and registering the listener.
-      const {
-        data: { subscription },
-      } = supabase.auth.onAuthStateChange((event, session) => {
-        if (cancelled) return;
-        if (session && event === "SIGNED_IN") {
-          subscription.unsubscribe();
-          window.history.replaceState(
-            window.history.state,
-            "",
-            window.location.pathname,
-          );
-          navigate("/", { replace: true });
-        }
-      });
-
-      // 2. Now check — the SDK may have already processed the hash.
-      const { data } = await supabase.auth.getSession();
-      if (!cancelled && data?.session) {
+    // Register the listener. The SDK emits INITIAL_SESSION (with the
+    // current session) to every registered listener asynchronously after
+    // initializePromise resolves — this catches the case where SIGNED_IN
+    // was already emitted before the listener was registered.
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      if (cancelled) return;
+      if (session && (event === "SIGNED_IN" || event === "INITIAL_SESSION")) {
         subscription.unsubscribe();
         window.history.replaceState(
           window.history.state,
@@ -38,22 +25,20 @@ export default function AuthCallback() {
           window.location.pathname,
         );
         navigate("/", { replace: true });
-        return;
       }
+    });
 
-      // 3. Timeout: if neither getSession nor the listener fired after 10s.
-      setTimeout(() => {
-        if (!cancelled) {
-          subscription.unsubscribe();
-          setStatus("error");
-        }
-      }, 10000);
-    }
-
-    handleCallback();
+    // Timeout: if the listener hasn't fired after 12s, show the error page.
+    const timeoutId = setTimeout(() => {
+      if (!cancelled) {
+        subscription.unsubscribe();
+        setStatus("error");
+      }
+    }, 12000);
 
     return () => {
       cancelled = true;
+      clearTimeout(timeoutId);
     };
   }, [navigate]);
 
