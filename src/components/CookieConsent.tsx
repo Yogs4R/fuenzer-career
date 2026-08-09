@@ -29,7 +29,7 @@ function injectGA() {
 
 export default function CookieConsent() {
   const { t } = useTranslation();
-  const [consent, setConsent] = useState<Consent>(null);
+  const [, setConsent] = useState<Consent>(null);
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {

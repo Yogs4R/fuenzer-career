@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { handleSectionLink } from "../lib/sectionLink";
-import { useInterviewSession, getGuestHistory, deleteGuestSession, type GuestHistoryItem } from "../lib/InterviewSession";
+import { useInterviewSession, getGuestHistory, deleteGuestSession } from "../lib/InterviewSession";
 import { useAuth } from "../lib/AuthContext";
 import { supabase } from "../lib/supabaseClient";
 import { useTranslation } from "../lib/i18n";
