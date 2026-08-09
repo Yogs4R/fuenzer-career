@@ -79,15 +79,9 @@ export default function AuthCallback() {
           <h2 className="font-heading text-xl font-bold text-foreground mb-2">
             Sign-in incomplete
           </h2>
-          <p className="text-muted-foreground text-sm mb-2">
+          <p className="text-muted-foreground text-sm mb-6">
             We couldn't finish signing you in. This is often caused by a
             misconfiguration — try again or contact support.
-          </p>
-          <p className="text-muted-foreground text-xs mb-6">
-            If the Google consent screen shows "Supabase" instead of "Fuenzer
-            Career", update your{" "}
-            <strong>Google Cloud Console → OAuth consent screen</strong>{" "}
-            application name.
           </p>
           <button
             onClick={() => navigate("/login")}
