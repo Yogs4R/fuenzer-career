@@ -1,0 +1,68 @@
+# Fuenzer Career - Comprehensive Context for AI Engines & LLMs
+
+> Fuenzer Career is an AI-driven mock interview and career coaching platform designed to simulate realistic job interview sessions using voice interaction, real-time speech-to-text, and detailed AI feedback.
+
+## 1. Product Overview
+
+Fuenzer Career (`https://career.fuenzer.web.id/`) bridges the gap between job applications and interview readiness. By combining automated question synthesis, live speech recognition, and qualitative evaluation models, Fuenzer Career enables candidates to practice without scheduling friction or anxiety.
+
+Key Value Propositions:
+- Instant on-demand mock interviews for any industry or role.
+- Real-time voice practice reflecting authentic verbal communication.
+- Quantitative and qualitative feedback targeting both content depth and speaking confidence.
+- Free to start with zero mandatory registration for initial sessions (guest mode available).
+
+## 2. Core Functional Modules
+
+### 2.1 Role & Skill Research (Dashboard)
+- Searchable job roles with dynamic recommendations (e.g., Frontend Developer, Data Engineer, Product Manager, UX Designer).
+- Live skill demand indicators categorized by technical proficiencies, soft skills, and tooling.
+- Configurable interview parameters: question count, difficulty, and interview language.
+
+### 2.2 Interactive Voice Interview Room
+- Audio capture via Web Audio API, processing 16kHz PCM audio stream chunks.
+- Live transcription streamed over secure WebSockets via Speechmatics ASR engine.
+- Real-time visual audio waveform feedback.
+- Real-time filler word counter detecting verbal crutches in real-time.
+- On-demand AI hint suggestions when candidates experience mental blocks.
+- Fallback keyboard text input mode for environments where microphone access is constrained.
+
+### 2.3 Comprehensive Evaluation Report
+Each session yields a multi-faceted assessment score (0-100) and structured commentary:
+- **Overall Score**: Weighted composite of content mastery and vocal delivery.
+- **Skill Alignment**: Breakdown of demonstrated competence against expected competencies for the role.
+- **STAR Methodology Analysis**: Examination of answers for Situation, Task, Action, and Result framing.
+- **Delivery Feedback**: Assessment of speech cadence, filler word frequency, clarity, and conciseness.
+- **Actionable Improvement Recommendations**: Specific follow-up practice points and suggested revision phrasing.
+
+### 2.4 History & Progress Tracking
+- Authenticated users (via Supabase Auth & Google OAuth) can persist historical reports.
+- Performance trajectory charts showing score evolution over consecutive mock sessions.
+
+## 3. Supported Languages & Internationalization
+
+Fuenzer Career provides full UI internationalization and localized interview generation across 6 languages:
+1. English (en) - Default
+2. Indonesian / Bahasa Indonesia (id)
+3. German / Deutsch (de)
+4. French / Français (fr)
+5. Japanese / 日本語 (ja)
+6. Chinese / 中文 (zh)
+
+## 4. Privacy, Security & Data Handling
+
+- **Stateless Guest Mode**: Users can practice without logging in; guest session data is stored locally within browser `localStorage` and never permanently recorded in backend databases.
+- **Voice Data Privacy**: Audio streams are processed in real-time for speech-to-text transcription and are not permanently archived or used to train third-party public foundation models without consent.
+- **Authentication**: Powered by Supabase Auth with secure Row Level Security (RLS) policies ensuring users can only access their own practice history and reports.
+- **Analytics**: Google Analytics 4 is integrated with opt-in cookie consent banner compliance.
+
+## 5. Canonical Site Architecture
+
+- `https://career.fuenzer.web.id/` - Root dashboard, role selection, and public entry point.
+- `https://career.fuenzer.web.id/login` - User sign in portal.
+- `https://career.fuenzer.web.id/signup` - Account creation portal.
+- `https://career.fuenzer.web.id/privacy` - Official privacy policy.
+- `https://career.fuenzer.web.id/terms` - Official terms of service.
+- `https://career.fuenzer.web.id/llms.txt` - Standard LLM discovery file.
+- `https://career.fuenzer.web.id/sitemap.xml` - Canonical XML sitemap.
+- `https://career.fuenzer.web.id/robots.txt` - Crawler instructions and rate limits.

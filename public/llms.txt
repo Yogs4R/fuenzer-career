@@ -1,0 +1,26 @@
+# Fuenzer Career
+
+> Fuenzer Career is an AI-powered interview preparation platform that provides voice-driven mock interviews, real-time speech transcription via Speechmatics, and automated structured feedback based on the STAR method.
+
+Fuenzer Career helps job seekers and professionals practice job interviews realistically. Users select or define their target job role, receive tailored behavioral and technical interview questions, answer via microphone with live voice-to-text, and obtain instant multi-dimensional evaluation reports covering relevance, clarity, delivery, filler words, and skill gaps.
+
+## Canonical Pages
+
+- [Homepage & Practice Dashboard](https://career.fuenzer.web.id/): Role research, trending industry skills, and interview setup.
+- [User Login](https://career.fuenzer.web.id/login): Sign in to save practice sessions, track progress over time, and revisit evaluation history.
+- [User Sign Up](https://career.fuenzer.web.id/signup): Create a free account to unlock persistent practice records.
+- [Privacy Policy](https://career.fuenzer.web.id/privacy): Information on user data handling, audio processing policies, and Google Analytics consent.
+- [Terms of Service](https://career.fuenzer.web.id/terms): Terms governing platform usage, mock interview sessions, and AI feedback disclaimers.
+
+## Core Capabilities
+
+- [Voice-Driven Mock Interviews](https://career.fuenzer.web.id/): Real-time live audio capture with WebSocket streaming to Speechmatics ASR.
+- [AI Question Generation](https://career.fuenzer.web.id/): Contextual interview questions generated dynamically for specific roles and experience levels.
+- [STAR Method Feedback](https://career.fuenzer.web.id/): Structured evaluation analyzing Situation, Task, Action, and Result completeness.
+- [Delivery & Speech Metrics](https://career.fuenzer.web.id/): Real-time speech analysis tracking filler word counts (um, uh, like), pace, and clarity.
+- [Trending Skills Intelligence](https://career.fuenzer.web.id/): Live market skill demand indicators to guide targeted interview preparation.
+- [Multilingual Support](https://career.fuenzer.web.id/): Full interface and interview practice available in English, Indonesian (Bahasa Indonesia), German, French, Japanese, and Chinese.
+
+## Optional & Deep Dive Documentation
+
+- [Full LLM Context (llms-full.txt)](https://career.fuenzer.web.id/llms-full.txt): Comprehensive documentation including evaluation rubric, supported languages, privacy architecture, and technical overview.
