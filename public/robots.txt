@@ -1,2 +1,44 @@
+# robots.txt for Fuenzer Career (https://career.fuenzer.web.id/)
+
 User-agent: *
 Allow: /
+# Block non-indexable interactive interview rooms and authentication callback redirects
+Disallow: /interview
+Disallow: /report
+Disallow: /auth/
+
+# AI Search & Grounding Crawlers
+User-agent: Bingbot
+Allow: /
+Allow: /llms.txt
+Allow: /llms-full.txt
+Disallow: /interview
+Disallow: /report
+Disallow: /auth/
+
+User-agent: GPTBot
+Allow: /
+Allow: /llms.txt
+Allow: /llms-full.txt
+Disallow: /interview
+Disallow: /report
+Disallow: /auth/
+
+User-agent: ClaudeBot
+Allow: /
+Allow: /llms.txt
+Allow: /llms-full.txt
+Disallow: /interview
+Disallow: /report
+Disallow: /auth/
+
+User-agent: PerplexityBot
+Allow: /
+Allow: /llms.txt
+Allow: /llms-full.txt
+Disallow: /interview
+Disallow: /report
+Disallow: /auth/
+
+# Sitemap Location
+Sitemap: https://career.fuenzer.web.id/sitemap.xml
