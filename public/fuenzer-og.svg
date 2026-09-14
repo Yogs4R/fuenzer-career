@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1200" height="630" viewBox="0 0 1200 630" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1200" height="630" fill="#0A66C2"/>
+  <rect x="540" y="195" width="120" height="120" rx="24" fill="white"/>
+  <text x="600" y="280" text-anchor="middle" font-family="Arial, sans-serif" font-weight="bold" font-size="64" fill="#0A66C2">F</text>
+  <text x="600" y="370" text-anchor="middle" font-family="Arial, sans-serif" font-weight="bold" font-size="48" fill="white" letter-spacing="4">FUENZER</text>
+  <text x="600" y="410" text-anchor="middle" font-family="Arial, sans-serif" font-weight="300" font-size="28" fill="white" opacity="0.85">CAREER</text>
+  <text x="600" y="455" text-anchor="middle" font-family="Arial, sans-serif" font-weight="400" font-size="20" fill="white" opacity="0.7">AI Interview Coach · Voice Practice · Smart Feedback</text>
+</svg>
